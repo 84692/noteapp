@@ -33,7 +33,7 @@
             font-size: 2em;
             position: fixed;
             bottom: 0;
-            width: 33.33%;
+            width: 50.33%;
             height: 60px;
             background-color: #9400D3; /* Violeta */
             border: none;
@@ -116,11 +116,13 @@
             cursor: pointer;
             z-index: 999; /* Para garantir que o X fique acima de tudo */
         }
+  
+  
             #settings-btn {
     font-size: 1.0em;
     position: fixed;
-    top: 10px;
-    right: 10px;
+    top: 5px;
+    right: 5px;
     background-color: transparent;
     border: none;
     color: #9400D3;
@@ -147,6 +149,30 @@
     padding: 10px;
     cursor: pointer;
 }
+  
+          #hide-buttons-btn {
+    font-size: 1.30em;
+    position: fixed;
+    bottom: 10px; /* Um pouco acima dos botões principais */
+    right: 5px;
+    background-color: transparent;
+    border: none;
+    color: #9400D3;
+    cursor: pointer;
+}
+    
+  
+    #minimize-settings-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: transparent;
+    border: none;
+    color: #9400D3;
+    font-size: 0.3em;
+    cursor: pointer;
+}
+  
     </style>
 </head>
 <body>
@@ -159,12 +185,14 @@
     <div id="settings-modal">
     <p>Configurações</p>
     <button id="update-btn">Verificar Atualizações</button>
+    <button id="minimize-settings-btn">❌</button>
 </div>
     <div id="saved-notes">
         <button id="close-btn">X</button> <!-- Botão de fechar (X) flutuante -->
         <div id="notes-container"></div>
     </div>
-
+    <button id="hide-buttons-btn">👁️</button>
+</div>
     <script>
         let editingNoteIndex = null; // Índice da nota que está sendo editada
         const noteArea = document.getElementById('note-area');
@@ -300,6 +328,28 @@ window.addEventListener('click', (event) => {
     if (event.target === settingsModal) {
         settingsModal.style.display = 'none';
     }
+});
+  
+            
+        const hideButtonsBtn = document.getElementById('hide-buttons-btn');
+const mainButtons = [saveBtn, folderBtn, settingsBtn, newNoteBtn]; // Botões principais
+
+// Estado para verificar se os botões estão ocultos
+let buttonsHidden = false;
+
+// Função para ocultar/mostrar botões
+hideButtonsBtn.addEventListener('click', () => {
+    buttonsHidden = !buttonsHidden; // Alterna o estado
+    mainButtons.forEach(button => {
+        button.style.display = buttonsHidden ? 'none' : 'block'; // Oculta ou mostra os botões
+    });
+});
+
+          const minimizeSettingsBtn = document.getElementById('minimize-settings-btn');
+
+// Minimizar modal de configurações
+minimizeSettingsBtn.addEventListener('click', () => {
+    settingsModal.style.display = 'none'; // Esconder o modal
 });
     </script>
 
