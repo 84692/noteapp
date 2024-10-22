@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App de Anotações</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+            background-color: #000000; /* Fundo preto */
+            color: #9400D3; /* Roxo */
+        }
+
+        #note-area {
+            width: 100%;
+            height: calc(100% - 60px);
+            padding: 10px;
+            box-sizing: border-box;
+            font-size: 18px;
+            background-color: transparent;
+            color: #9400D3;
+            border: none;
+            resize: none;
+            outline: none;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        #save-btn, #folder-btn {
+            font-size: 2em;
+            position: fixed;
+            bottom: 0;
+            width: 50%;
+            height: 60px;
+            background-color: #9400D3; /* Violeta */
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        #save-btn {
+            right: 0;
+        }
+
+        #folder-btn {
+            left: 0;
+        }
+
+        #saved-notes {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9); /* Preto translúcido */
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: scroll;
+            color: white;
+        }
+
+        .note {
+            background-color: #4B0082; /* Roxo escuro */
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            position: relative;
+            word-wrap: break-word;
+            cursor: pointer;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: transparent;
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+
+        .note-timestamp {
+            font-size: 12px;
+            color: #9400D3; /* Roxo */
+        }
+    </style>
+</head>
+<body>
+
+    <textarea id="note-area" placeholder="Escreva sua nota aqui..."></textarea>
+    <button id="save-btn">💾</button>
+    <button id="folder-btn">📂</button>
+
+    <div id="saved-notes"></div>
+
+    <script>
+        let editingNoteIndex = null; // Índice da nota que está sendo editada
+        const noteArea = document.getElementById('note-area');
+        const saveBtn = document.getElementById('save-btn');
+        const folderBtn = document.getElementById('folder-btn');
+        const savedNotesDiv = document.getElementById('saved-notes');
+
+        // Carregar notas salvas ao iniciar
+        window.onload = function() {
+            displaySavedNotes();
+        }
+
+        // Função para salvar ou editar nota
+        saveBtn.addEventListener('click', () => {
+            const noteText = noteArea.value.trim();
+            if (noteText) {
+                let notes = JSON.parse(localStorage.getItem('notes')) || [];
+                const timestamp = new Date().toLocaleString(); // Data e hora de salvamento
+                if (editingNoteIndex !== null) {
+                    // Editar nota existente
+                    notes[editingNoteIndex] = { text: noteText, timestamp };
+                    editingNoteIndex = null;
+                } else {
+                    // Criar nova nota
+                    notes.push({ text: noteText, timestamp });
+                }
+                localStorage.setItem('notes', JSON.stringify(notes));
+                noteArea.value = '';
+                displaySavedNotes();
+            } else {
+                alert('Digite algo para salvar.');
+            }
+        });
+
+        // Exibir a área de notas salvas
+        folderBtn.addEventListener('click', () => {
+            const notes = JSON.parse(localStorage.getItem('notes')) || [];
+            if (notes.length > 0) {
+                savedNotesDiv.style.display = 'block';
+            }
+        });
+
+        // Função para mostrar as notas salvas
+        function displaySavedNotes() {
+            savedNotesDiv.innerHTML = ''; // Limpar notas salvas
+            const notes = JSON.parse(localStorage.getItem('notes')) || [];
+            if (notes.length > 0) {
+                notes.forEach((note, index) => {
+                    const noteDiv = document.createElement('div');
+                    noteDiv.className = 'note';
+                    noteDiv.textContent = note.text;
+
+                    // Mostrar data e hora de salvamento
+                    const timestamp = document.createElement('div');
+                    timestamp.className = 'note-timestamp';
+                    timestamp.textContent = `Salvo em: ${note.timestamp}`;
+                    noteDiv.appendChild(timestamp);
+
+                    // Clique na nota para editar
+                    noteDiv.addEventListener('click', () => {
+                        editNote(index);
+                    });
+
+                    // Botão de apagar
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.textContent = '🗑️';
+                    deleteBtn.addEventListener('click', (event) => {
+                        event.stopPropagation(); // Evitar abrir a nota ao apagar
+                        deleteNote(index);
+                    });
+
+                    noteDiv.appendChild(deleteBtn);
+                    savedNotesDiv.appendChild(noteDiv);
+                });
+            } else {
+                savedNotesDiv.style.display = 'none'; // Minimiza se não houver notas
+            }
+        }
+
+        // Função para editar uma nota (sem alert)
+        function editNote(index) {
+            const notes = JSON.parse(localStorage.getItem('notes')) || [];
+            noteArea.value = notes[index].text;
+            editingNoteIndex = index;
+            savedNotesDiv.style.display = 'none'; // Minimiza a área de notas salvas
+        }
+
+        // Função para apagar uma nota com confirmação
+        function deleteNote(index) {
+            if (confirm('Tem certeza que deseja apagar esta nota?')) {
+                let notes = JSON.parse(localStorage.getItem('notes')) || [];
+                notes.splice(index, 1);
+                localStorage.setItem('notes', JSON.stringify(notes));
+                displaySavedNotes();
+                if (notes.length === 0) {
+                    savedNotesDiv.style.display = 'none'; // Minimiza se todas as notas forem apagadas
+                    noteArea.value = '';
+                    editingNoteIndex = null;
+                }
+            }
+        }
+    </script>
+
+</body>
+</html>
