@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>App de Anotações</title>
+    <title>Purple Note</title>
     <style>
         body, html {
     margin: 0;
@@ -46,18 +46,18 @@ textarea, button, #saved-notes, #settings-modal {
             white-space: pre-wrap;
         }
 
-        #save-btn, #folder-btn, #new-note-btn {
-            font-size: 1.80em;
-            position: fixed;
-            bottom: 0;
-            width: 50.33%;
-            height: 60px;
-            background-color: #9400D3; /* Violeta */
-            border: none;
-            color: white;
-            cursor: pointer;
-        }
-
+       #save-btn, #folder-btn, #new-note-btn {
+    font-size: 1.80em;
+    position: fixed;
+    bottom: 0;
+    width: 50.33%;
+    height: 60px;
+    background-color: rgba(148, 0, 211, 0.5); /* Violeta com 50% de opacidade */
+    border: none;
+    color: white;
+    cursor: pointer;
+    z-index: ; /* Certifique-se de que está acima de outros elementos */
+}
         #save-btn {
             right: 0;
         }
@@ -153,7 +153,7 @@ textarea, button, #saved-notes, #settings-modal {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: #000000;
+    background-color: rgba(148, 0, 211, 0.1);
     border: 1px solid #9400D3;
     padding: 20px;
     color: #9400D3;
@@ -179,6 +179,7 @@ textarea, button, #saved-notes, #settings-modal {
     border: none;
     color: #9400D3;
     cursor: pointer;
+    z-index: 999;
 }
     
   
@@ -197,7 +198,7 @@ textarea, button, #saved-notes, #settings-modal {
 </head>
 <body>
     <div id="overlay"></div>
-    <textarea id="note-area" placeholder="Escreva sua nota aqui..."></textarea>
+    <textarea id="note-area" placeholder="note..."></textarea>
     <button id="save-btn">💾</button>
     <button id="folder-btn">📂</button>
     <button id="new-note-btn">+</button> <!-- Botão redondo de nova nota -->
@@ -210,7 +211,7 @@ textarea, button, #saved-notes, #settings-modal {
      
 </div>
     <div id="saved-notes">
-        <button id="close-btn">X</button> <!-- Botão de fechar (X) flutuante -->
+        <button id="close-btn">✖️</button> <!-- Botão de fechar (X) flutuante -->
         <div id="notes-container"></div>
     </div>
     <button id="hide-buttons-btn">👁️</button>
