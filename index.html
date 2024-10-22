@@ -6,22 +6,39 @@
     <title>App de Anotações</title>
     <style>
         body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: Arial, sans-serif;
-            background-color: #000000; /* Fundo preto */
-            color: #9400D3; /* Roxo */
-        }
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: Arial, sans-serif;
+    background-image: url('https://gifdb.com/images/high/purple-aesthetic-anime-street-rain-2ngawoqnbdoqnofo.webp');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    color: #9400D3; /* Roxo */
+}
 
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8); /* Cor preta com 50% de opacidade */
+    z-index: 1; /* Para garantir que fique acima do fundo, mas abaixo do conteúdo */
+}
+
+textarea, button, #saved-notes, #settings-modal {
+    position: relative; /* Adiciona contexto para z-index */
+    z-index: 2; /* Aumenta para estar acima da sobreposição */
+}
         #note-area {
             width: 100%;
             height: calc(100% - 60px);
-            padding: 20px;
+            padding: 38px;
             box-sizing: border-box;
             font-size: 18px;
             background-color: transparent;
-            color: #9400D3;
+            color: white;
             border: none;
             resize: none;
             outline: none;
@@ -30,7 +47,7 @@
         }
 
         #save-btn, #folder-btn, #new-note-btn {
-            font-size: 2em;
+            font-size: 1.80em;
             position: fixed;
             bottom: 0;
             width: 50.33%;
@@ -95,7 +112,7 @@
             background-color: transparent;
             border: none;
             color: white;
-            font-size: 1.5em;
+            font-size: 1.0em;
             cursor: pointer;
         }
 
@@ -119,10 +136,10 @@
   
   
             #settings-btn {
-    font-size: 1.0em;
+    font-size: 0.95em;
     position: fixed;
-    top: 5px;
-    right: 5px;
+    top: 10px;
+    right: 4px;
     background-color: transparent;
     border: none;
     color: #9400D3;
@@ -130,6 +147,7 @@
 }
 
 #settings-modal {
+    border-radius: 10px;
     display: none;
     position: fixed;
     top: 50%;
@@ -143,15 +161,17 @@
 }
 
 #settings-modal button {
+    border-radius: 10px;
     background-color: #9400D3;
     border: none;
     color: white;
     padding: 10px;
     cursor: pointer;
+    margin: 10px 0; /* Adiciona uma margem de 10px em cima e embaixo dos botões */
 }
   
           #hide-buttons-btn {
-    font-size: 1.30em;
+    font-size: 1.0em;
     position: fixed;
     bottom: 10px; /* Um pouco acima dos botões principais */
     right: 5px;
@@ -176,7 +196,7 @@
     </style>
 </head>
 <body>
-
+    <div id="overlay"></div>
     <textarea id="note-area" placeholder="Escreva sua nota aqui..."></textarea>
     <button id="save-btn">💾</button>
     <button id="folder-btn">📂</button>
@@ -186,6 +206,8 @@
     <p>Configurações</p>
     <button id="update-btn">Verificar Atualizações</button>
     <button id="minimize-settings-btn">❌</button>
+    <button id="toggle-sound-btn">Ativar Som</button>
+     
 </div>
     <div id="saved-notes">
         <button id="close-btn">X</button> <!-- Botão de fechar (X) flutuante -->
@@ -193,6 +215,9 @@
     </div>
     <button id="hide-buttons-btn">👁️</button>
 </div>
+         <audio id="rainAudio" loop volume="1.0">
+    <source src="https://soundbible.com/mp3/2_Minute_Thunderstorm-Mike_Koenig-574654058.mp3" type="audio/mpeg">
+</audio>
     <script>
         let editingNoteIndex = null; // Índice da nota que está sendo editada
         const noteArea = document.getElementById('note-area');
@@ -251,41 +276,43 @@
 
         // Função para mostrar as notas salvas
         function displaySavedNotes() {
-            notesContainer.innerHTML = ''; // Limpar notas salvas
-            const notes = JSON.parse(localStorage.getItem('notes')) || [];
-            if (notes.length > 0) {
-                notes.forEach((note, index) => {
-                    const noteDiv = document.createElement('div');
-                    noteDiv.className = 'note';
-                    noteDiv.textContent = note.text;
+    notesContainer.innerHTML = ''; // Limpar notas salvas
+    const notes = JSON.parse(localStorage.getItem('notes')) || [];
+    if (notes.length > 0) {
+        notes.forEach((note, index) => {
+            const noteDiv = document.createElement('div');
+            noteDiv.className = 'note';
+            noteDiv.textContent = note.text;
 
-                    // Mostrar data e hora de salvamento
-                    const timestamp = document.createElement('div');
-                    timestamp.className = 'note-timestamp';
-                    timestamp.textContent = `Salvo em: ${note.timestamp}`;
-                    noteDiv.appendChild(timestamp);
+            // Mostrar data e hora de salvamento
+            const timestamp = document.createElement('div');
+            timestamp.className = 'note-timestamp';
+            timestamp.textContent = `Salvo em: ${note.timestamp}`;
+            noteDiv.appendChild(timestamp);
 
-                    // Clique na nota para editar
-                    noteDiv.addEventListener('click', () => {
-                        editNote(index);
-                    });
+            // Clique na nota para editar
+            noteDiv.addEventListener('click', () => {
+                editNote(index);
+            });
 
-                    // Botão de apagar
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'delete-btn';
-                    deleteBtn.textContent = '🗑️';
-                    deleteBtn.addEventListener('click', (event) => {
-                        event.stopPropagation(); // Evitar abrir a nota ao apagar
-                        deleteNote(index);
-                    });
+            // Botão de apagar
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.textContent = '🗑️';
+            deleteBtn.addEventListener('click', (event) => {
+                event.stopPropagation(); // Evitar abrir a nota ao apagar
+                deleteNote(index);
+            });
 
-                    noteDiv.appendChild(deleteBtn);
-                    notesContainer.appendChild(noteDiv);
-                });
-            } else {
-                savedNotesDiv.style.display = 'none'; // Minimiza se não houver notas
-            }
-        }
+            noteDiv.appendChild(deleteBtn);
+            
+            // Adicionar a nova nota no início do contêiner
+            notesContainer.insertBefore(noteDiv, notesContainer.firstChild);
+        });
+    } else {
+        savedNotesDiv.style.display = 'none'; // Minimiza se não houver notas
+    }
+}
 
         // Função para editar uma nota (sem alert)
         function editNote(index) {
@@ -351,7 +378,27 @@ hideButtonsBtn.addEventListener('click', () => {
 minimizeSettingsBtn.addEventListener('click', () => {
     settingsModal.style.display = 'none'; // Esconder o modal
 });
-    </script>
 
+
+
+
+       const rainAudio = document.getElementById('rainAudio');
+const toggleSoundBtn = document.getElementById('toggle-sound-btn');
+let soundEnabled = true; // Inicialmente o som está ativado
+
+// Função para alternar o som
+toggleSoundBtn.addEventListener('click', () => {
+    soundEnabled = !soundEnabled; // Alterna o estado do som
+    if (soundEnabled) {
+        rainAudio.play(); // Reproduz o som
+        toggleSoundBtn.textContent = 'Desativar Som'; // Atualiza o texto do botão
+    } else {
+        rainAudio.pause(); // Pausa o som
+        toggleSoundBtn.textContent = 'Ativar Som'; // Atualiza o texto do botão
+    }
+});
+
+   
+    </script>
 </body>
 </html>
