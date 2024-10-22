@@ -10,7 +10,7 @@
     padding: 0;
     height: 100%;
     font-family: Arial, sans-serif;
-    background-image: url('https://gifdb.com/images/high/purple-aesthetic-anime-street-rain-2ngawoqnbdoqnofo.webp');
+    background-color: #4B0082;
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
@@ -136,10 +136,12 @@ textarea, button, #saved-notes, #settings-modal {
   
   
             #settings-btn {
-    font-size: 0.95em;
+    padding: 10px;
+    opacity: 1; 
+    font-size: 1.5em;
     position: fixed;
-    top: 10px;
-    right: 4px;
+    bottom: 4px;
+    right: 335px;
     background-color: transparent;
     border: none;
     color: #9400D3;
@@ -171,9 +173,11 @@ textarea, button, #saved-notes, #settings-modal {
 }
   
           #hide-buttons-btn {
-    font-size: 1.0em;
+    padding: 10px;
+    opacity: 0.4; 
+    font-size: 1.5em;
     position: fixed;
-    bottom: 10px; /* Um pouco acima dos botões principais */
+    bottom: 4px; /* Um pouco acima dos botões principais */
     right: 5px;
     background-color: transparent;
     border: none;
@@ -190,8 +194,28 @@ textarea, button, #saved-notes, #settings-modal {
     background-color: transparent;
     border: none;
     color: #9400D3;
-    font-size: 0.3em;
+    font-size: 0.7em;
     cursor: pointer;
+}
+    
+    #change-wallpaper-btn { 
+    padding: 10px;
+    opacity: 0.4; 
+    position: fixed;
+    bottom: 60px; /* Ajuste conforme a posição desejada */
+    right: 5px;
+    background-color: transparent;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    color: white;
+    z-index: 1000;
+}
+    
+    
+    #opacity-range {
+    width: 100%; /* Ajuste a largura do controle */
+    margin-top: 20px; /* Espaçamento superior */
 }
   
     </style>
@@ -200,18 +224,26 @@ textarea, button, #saved-notes, #settings-modal {
     <div id="overlay"></div>
     <textarea id="note-area" placeholder="note..."></textarea>
     <button id="save-btn">💾</button>
+    <button id="change-wallpaper-btn">🎲</button>
     <button id="folder-btn">📂</button>
     <button id="new-note-btn">+</button> <!-- Botão redondo de nova nota -->
     <button id="settings-btn">⚙️</button>
+
     <div id="settings-modal">
-    <p>Configurações</p>
-    <button id="update-btn">Verificar Atualizações</button>
-    <button id="minimize-settings-btn">❌</button>
-    <button id="toggle-sound-btn">Ativar Som</button>
-     
-</div>
+        <p>Configurações</p>
+        <button id="update-btn">Verificar Atualizações</button>
+        <button id="minimize-settings-btn">❌</button>
+        <button id="toggle-wallpaper-btn">Mudar o papel de parede toda vez que entrar: não</button>
+        
+        <label for="opacity-range">Opacidade do Wallpaper:</label>
+        <input type="range" id="opacity-range" min="0" max="100" value="80">
+        
+        <!-- Mova o botão para ativar som para dentro do modal -->
+        <button id="toggle-sound-btn">Ativar Som</button>
+    </div>
+</body>
     <div id="saved-notes">
-        <button id="close-btn">✖️</button> <!-- Botão de fechar (X) flutuante -->
+        <button id="close-btn">X</button> <!-- Botão de fechar (X) flutuante -->
         <div id="notes-container"></div>
     </div>
     <button id="hide-buttons-btn">👁️</button>
@@ -219,7 +251,7 @@ textarea, button, #saved-notes, #settings-modal {
          <audio id="rainAudio" loop volume="1.0">
     <source src="https://soundbible.com/mp3/2_Minute_Thunderstorm-Mike_Koenig-574654058.mp3" type="audio/mpeg">
 </audio>
-    <script>
+        <script>
         let editingNoteIndex = null; // Índice da nota que está sendo editada
         const noteArea = document.getElementById('note-area');
         const saveBtn = document.getElementById('save-btn');
@@ -399,7 +431,127 @@ toggleSoundBtn.addEventListener('click', () => {
     }
 });
 
-   
+       
+      const wallpapers = [
+    'https://i.imgur.com/ihgbwuG.jpeg',
+    'https://i.imgur.com/Bz9j1mF.jpeg',
+    'https://i.imgur.com/KiN0kR3.jpeg',
+    'https://i.imgur.com/sac86E2.jpeg',
+    'https://i.imgur.com/wSwT86c.jpeg'
+];
+
+let lastIndex = -1; // Índice da última imagem escolhida
+let isChanging = false; // Flag para verificar se estamos mudando a imagem
+
+const changeWallpaperBtn = document.getElementById('change-wallpaper-btn');
+changeWallpaperBtn.addEventListener('click', () => {
+    if (isChanging) return; // Não faz nada se já está mudando
+
+    let randomIndex;
+
+    do {
+        randomIndex = Math.floor(Math.random() * wallpapers.length);
+    } while (randomIndex === lastIndex); // Garante que o índice seja diferente do anterior
+
+    lastIndex = randomIndex; // Atualiza o índice da última imagem escolhida
+    isChanging = true; // Indica que estamos mudando a imagem
+
+    const img = new Image();
+    img.src = wallpapers[randomIndex];
+    img.onload = () => {
+        document.body.style.backgroundImage = `url(${img.src})`;
+        isChanging = false; // Permite mudar a imagem novamente
+    };
+});
+
+    
+
+
+    const toggleWallpaperBtn = document.getElementById('toggle-wallpaper-btn');
+
+// Carregar a preferência do localStorage ao iniciar
+let autoChangeWallpaper = localStorage.getItem('autoChangeWallpaper') === 'true';
+
+// Atualizar o texto do botão com base na preferência
+toggleWallpaperBtn.textContent = `Mudar o papel de parede toda vez que entrar: ${autoChangeWallpaper ? 'sim' : 'não'}`;
+
+// Função para alternar a preferência de mudar o papel de parede
+toggleWallpaperBtn.addEventListener('click', () => {
+    autoChangeWallpaper = !autoChangeWallpaper; // Alterna o estado
+    localStorage.setItem('autoChangeWallpaper', autoChangeWallpaper); // Salva a preferência no localStorage
+    toggleWallpaperBtn.textContent = `Mudar o papel de parede toda vez que entrar: ${autoChangeWallpaper ? 'sim' : 'não'}`; // Atualiza o texto do botão
+});
+
+// Mudar o papel de parede automaticamente se a preferência estiver ativada
+if (autoChangeWallpaper) {
+    changeWallpaper(); // Chama a função para mudar o papel de parede
+}
+
+// Função para mudar o papel de parede
+function changeWallpaper() {
+    if (isChanging) return; // Não faz nada se já está mudando
+
+    let randomIndex;
+
+    do {
+        randomIndex = Math.floor(Math.random() * wallpapers.length);
+    } while (randomIndex === lastIndex); // Garante que o índice seja diferente do anterior
+
+    lastIndex = randomIndex; // Atualiza o índice da última imagem escolhida
+    isChanging = true; // Indica que estamos mudando a imagem
+
+    const img = new Image();
+    img.src = wallpapers[randomIndex];
+    img.onload = () => {
+        document.body.style.backgroundImage = `url(${img.src})`;
+        isChanging = false; // Permite mudar a imagem novamente
+    };
+}
+
+// Chama a função para mudar o papel de parede ao carregar a página
+window.onload = function() {
+    displaySavedNotes(); // Carregar notas salvas
+    if (autoChangeWallpaper) {
+        changeWallpaper(); // Muda o papel de parede se a opção estiver ativada
+    }
+};
+
+
+         const opacityRange = document.getElementById('opacity-range');
+const overlay = document.getElementById('overlay');
+
+// Carregar a opacidade do localStorage ao iniciar
+window.onload = function() {
+    const savedOpacity = localStorage.getItem('overlayOpacity');
+    if (savedOpacity) {
+        opacityRange.value = savedOpacity;
+        updateOverlayOpacity(savedOpacity);
+    }
+};
+
+// Atualiza a opacidade do overlay
+opacityRange.addEventListener('input', (event) => {
+    const opacityValue = event.target.value;
+    localStorage.setItem('overlayOpacity', opacityValue); // Salva no localStorage
+    updateOverlayOpacity(opacityValue);
+});
+
+// Função para aplicar a opacidade ao overlay
+function updateOverlayOpacity(opacityValue) {
+    overlay.style.backgroundColor = `rgba(0, 0, 0, ${opacityValue / 100})`; // Atualiza a cor de fundo do overlay
+}
+
+
+
+        // Exibir a área de notas salvas
+folderBtn.addEventListener('click', () => {
+    // Verificar notas novamente e mostrar a área de notas salvas
+    displaySavedNotes(); // Verifica as notas novamente
+    const notes = JSON.parse(localStorage.getItem('notes')) || [];
+    if (notes.length > 0) {
+        savedNotesDiv.style.display = 'block'; // Exibe a área se houver notas
+    }
+});
     </script>
 </body>
 </html>
