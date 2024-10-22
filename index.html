@@ -17,7 +17,7 @@
         #note-area {
             width: 100%;
             height: calc(100% - 60px);
-            padding: 10px;
+            padding: 20px;
             box-sizing: border-box;
             font-size: 18px;
             background-color: transparent;
@@ -29,11 +29,11 @@
             white-space: pre-wrap;
         }
 
-        #save-btn, #folder-btn {
+        #save-btn, #folder-btn, #new-note-btn {
             font-size: 2em;
             position: fixed;
             bottom: 0;
-            width: 50%;
+            width: 33.33%;
             height: 60px;
             background-color: #9400D3; /* Violeta */
             border: none;
@@ -47,6 +47,21 @@
 
         #folder-btn {
             left: 0;
+        }
+
+        #new-note-btn {
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8em;
+            background-color: #9400D3; 
+            color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
         }
 
         #saved-notes {
@@ -65,7 +80,7 @@
 
         .note {
             background-color: #4B0082; /* Roxo escuro */
-            padding: 10px;
+            padding: 30px;
             margin-bottom: 10px;
             border-radius: 5px;
             position: relative;
@@ -88,6 +103,20 @@
             font-size: 12px;
             color: #9400D3; /* Roxo */
         }
+
+        #close-btn {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: transparent;
+            border: none;
+            color: white;
+            font-size: 2em;
+            cursor: pointer;
+            z-index: 999; /* Para garantir que o X fique acima de tudo */
+        }
+
     </style>
 </head>
 <body>
@@ -95,15 +124,22 @@
     <textarea id="note-area" placeholder="Escreva sua nota aqui..."></textarea>
     <button id="save-btn">💾</button>
     <button id="folder-btn">📂</button>
+    <button id="new-note-btn">+</button> <!-- Botão redondo de nova nota -->
 
-    <div id="saved-notes"></div>
+    <div id="saved-notes">
+        <button id="close-btn">X</button> <!-- Botão de fechar (X) flutuante -->
+        <div id="notes-container"></div>
+    </div>
 
     <script>
         let editingNoteIndex = null; // Índice da nota que está sendo editada
         const noteArea = document.getElementById('note-area');
         const saveBtn = document.getElementById('save-btn');
         const folderBtn = document.getElementById('folder-btn');
+        const newNoteBtn = document.getElementById('new-note-btn');
         const savedNotesDiv = document.getElementById('saved-notes');
+        const closeBtn = document.getElementById('close-btn');
+        const notesContainer = document.getElementById('notes-container');
 
         // Carregar notas salvas ao iniciar
         window.onload = function() {
@@ -140,9 +176,20 @@
             }
         });
 
+        // Fechar a área de notas salvas
+        closeBtn.addEventListener('click', () => {
+            savedNotesDiv.style.display = 'none';
+        });
+
+        // Adicionar uma nova nota
+        newNoteBtn.addEventListener('click', () => {
+            noteArea.value = ''; // Limpar a área de texto para uma nova nota
+            editingNoteIndex = null; // Indicar que estamos criando uma nova nota
+        });
+
         // Função para mostrar as notas salvas
         function displaySavedNotes() {
-            savedNotesDiv.innerHTML = ''; // Limpar notas salvas
+            notesContainer.innerHTML = ''; // Limpar notas salvas
             const notes = JSON.parse(localStorage.getItem('notes')) || [];
             if (notes.length > 0) {
                 notes.forEach((note, index) => {
@@ -171,7 +218,7 @@
                     });
 
                     noteDiv.appendChild(deleteBtn);
-                    savedNotesDiv.appendChild(noteDiv);
+                    notesContainer.appendChild(noteDiv);
                 });
             } else {
                 savedNotesDiv.style.display = 'none'; // Minimiza se não houver notas
