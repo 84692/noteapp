@@ -116,7 +116,37 @@
             cursor: pointer;
             z-index: 999; /* Para garantir que o X fique acima de tudo */
         }
+            #settings-btn {
+    font-size: 1.0em;
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background-color: transparent;
+    border: none;
+    color: #9400D3;
+    cursor: pointer;
+}
 
+#settings-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #000000;
+    border: 1px solid #9400D3;
+    padding: 20px;
+    color: #9400D3;
+    z-index: 1000;
+}
+
+#settings-modal button {
+    background-color: #9400D3;
+    border: none;
+    color: white;
+    padding: 10px;
+    cursor: pointer;
+}
     </style>
 </head>
 <body>
@@ -125,7 +155,11 @@
     <button id="save-btn">💾</button>
     <button id="folder-btn">📂</button>
     <button id="new-note-btn">+</button> <!-- Botão redondo de nova nota -->
-
+    <button id="settings-btn">⚙️</button>
+    <div id="settings-modal">
+    <p>Configurações</p>
+    <button id="update-btn">Verificar Atualizações</button>
+</div>
     <div id="saved-notes">
         <button id="close-btn">X</button> <!-- Botão de fechar (X) flutuante -->
         <div id="notes-container"></div>
@@ -247,6 +281,26 @@
                 }
             }
         }
+                 const settingsBtn = document.getElementById('settings-btn');
+const settingsModal = document.getElementById('settings-modal');
+const updateBtn = document.getElementById('update-btn');
+
+// Mostrar modal de configurações
+settingsBtn.addEventListener('click', () => {
+    settingsModal.style.display = 'block';
+});
+
+// Verificar atualizações (recarregar página)
+updateBtn.addEventListener('click', () => {
+    location.reload();
+});
+
+// Fechar modal ao clicar fora dele
+window.addEventListener('click', (event) => {
+    if (event.target === settingsModal) {
+        settingsModal.style.display = 'none';
+    }
+});
     </script>
 
 </body>
