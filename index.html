@@ -33,8 +33,8 @@ textarea, button, #saved-notes, #settings-modal {
 }
         #note-area {
             width: 100%;
-            height: calc(100% - 60px);
-            padding: 38px;
+            height: calc(100% - 99px);
+            padding: 20px;
             box-sizing: border-box;
             font-size: 18px;
             background-color: transparent;
@@ -47,6 +47,7 @@ textarea, button, #saved-notes, #settings-modal {
         }
 
        #save-btn, #folder-btn, #new-note-btn {
+    padding: 10px;
     font-size: 1.80em;
     position: fixed;
     bottom: 0;
@@ -96,6 +97,8 @@ textarea, button, #saved-notes, #settings-modal {
         }
 
         .note {
+            overflow-y: auto; 
+            max-height: 100px;
             background-color: #4B0082; /* Roxo escuro */
             padding: 30px;
             margin-bottom: 10px;
@@ -149,13 +152,14 @@ textarea, button, #saved-notes, #settings-modal {
 }
 
 #settings-modal {
+    width: 300px;
     border-radius: 10px;
     display: none;
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: rgba(148, 0, 211, 0.1);
+    background-color: rgba(148, 0, 211, 0.2);
     border: 1px solid #9400D3;
     padding: 20px;
     color: #9400D3;
@@ -174,7 +178,7 @@ textarea, button, #saved-notes, #settings-modal {
   
           #hide-buttons-btn {
     padding: 10px;
-    opacity: 0.4; 
+    opacity: 0.3; 
     font-size: 1.5em;
     position: fixed;
     bottom: 4px; /* Um pouco acima dos botões principais */
@@ -200,7 +204,7 @@ textarea, button, #saved-notes, #settings-modal {
     
     #change-wallpaper-btn { 
     padding: 10px;
-    opacity: 0.4; 
+    opacity: 0.3; 
     position: fixed;
     bottom: 60px; /* Ajuste conforme a posição desejada */
     right: 5px;
@@ -215,14 +219,14 @@ textarea, button, #saved-notes, #settings-modal {
     
     #opacity-range {
     width: 100%; /* Ajuste a largura do controle */
-    margin-top: 20px; /* Espaçamento superior */
+    margin-top: 10px; /* Espaçamento superior */
 }
   
     </style>
 </head>
 <body>
     <div id="overlay"></div>
-    <textarea id="note-area" placeholder="note..."></textarea>
+    <textarea id="note-area" placeholder="✍️..."></textarea>
     <button id="save-btn">💾</button>
     <button id="change-wallpaper-btn">🎲</button>
     <button id="folder-btn">📂</button>
@@ -233,13 +237,12 @@ textarea, button, #saved-notes, #settings-modal {
         <p>Configurações</p>
         <button id="update-btn">Verificar Atualizações</button>
         <button id="minimize-settings-btn">❌</button>
-        <button id="toggle-wallpaper-btn">Mudar o papel de parede toda vez que entrar: não</button>
+        <button id="toggle-wallpaper-btn">Mudar wallpaper aleatoriamente ao entrar no app: não</button>
         
         <label for="opacity-range">Opacidade do Wallpaper:</label>
         <input type="range" id="opacity-range" min="0" max="100" value="80">
-        
-        <!-- Mova o botão para ativar som para dentro do modal -->
-        <button id="toggle-sound-btn">Ativar Som</button>
+       
+        <p>App versão: 1.1</p>
     </div>
 </body>
     <div id="saved-notes">
@@ -413,24 +416,6 @@ minimizeSettingsBtn.addEventListener('click', () => {
 });
 
 
-
-
-       const rainAudio = document.getElementById('rainAudio');
-const toggleSoundBtn = document.getElementById('toggle-sound-btn');
-let soundEnabled = true; // Inicialmente o som está ativado
-
-// Função para alternar o som
-toggleSoundBtn.addEventListener('click', () => {
-    soundEnabled = !soundEnabled; // Alterna o estado do som
-    if (soundEnabled) {
-        rainAudio.play(); // Reproduz o som
-        toggleSoundBtn.textContent = 'Desativar Som'; // Atualiza o texto do botão
-    } else {
-        rainAudio.pause(); // Pausa o som
-        toggleSoundBtn.textContent = 'Ativar Som'; // Atualiza o texto do botão
-    }
-});
-
        
       const wallpapers = [
     'https://i.imgur.com/ihgbwuG.jpeg',
@@ -473,13 +458,13 @@ changeWallpaperBtn.addEventListener('click', () => {
 let autoChangeWallpaper = localStorage.getItem('autoChangeWallpaper') === 'true';
 
 // Atualizar o texto do botão com base na preferência
-toggleWallpaperBtn.textContent = `Mudar o papel de parede toda vez que entrar: ${autoChangeWallpaper ? 'sim' : 'não'}`;
+toggleWallpaperBtn.textContent = `Mudar wallpaper aleatoriamente ao entrar no app: ${autoChangeWallpaper ? 'sim' : 'não'}`;
 
 // Função para alternar a preferência de mudar o papel de parede
 toggleWallpaperBtn.addEventListener('click', () => {
     autoChangeWallpaper = !autoChangeWallpaper; // Alterna o estado
     localStorage.setItem('autoChangeWallpaper', autoChangeWallpaper); // Salva a preferência no localStorage
-    toggleWallpaperBtn.textContent = `Mudar o papel de parede toda vez que entrar: ${autoChangeWallpaper ? 'sim' : 'não'}`; // Atualiza o texto do botão
+    toggleWallpaperBtn.textContent = `Mudar wallpaper aleatoriamente ao entrar no app: ${autoChangeWallpaper ? 'sim' : 'não'}`; // Atualiza o texto do botão
 });
 
 // Mudar o papel de parede automaticamente se a preferência estiver ativada
@@ -518,7 +503,7 @@ window.onload = function() {
 
 
          const opacityRange = document.getElementById('opacity-range');
-const overlay = document.getElementById('overlay');
+         const overlay = document.getElementById('overlay');
 
 // Carregar a opacidade do localStorage ao iniciar
 window.onload = function() {
