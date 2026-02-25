@@ -1,543 +1,617 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Purple Note</title>
-    <style>
-        body, html {
-    background-image: url('https://i.imgur.com/ihgbwuG.jpeg');
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    font-family: Arial, sans-serif;
-    background-color: #4B0082;
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-position: center;
-    color: #9400D3; /* Roxo */
-}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SyncWatch</title>
+<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --surface: #111114;
+    --card: #18181d;
+    --border: #2a2a32;
+    --accent: #e8ff47;
+    --accent2: #ff4757;
+    --text: #f0f0f0;
+    --muted: #666672;
+    --radius: 10px;
+  }
 
-#overlay {
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.5;
+  }
+
+  header {
+    padding: 1.5rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-shadow: 0 0 30px rgba(232,255,71,0.3);
+  }
+
+  .logo span {
+    color: var(--text);
+  }
+
+  .status-pill {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    transition: all 0.3s;
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: all 0.3s;
+  }
+
+  .status-pill.connected .status-dot {
+    background: #4cde80;
+    box-shadow: 0 0 8px #4cde80;
+    animation: pulse 2s infinite;
+  }
+
+  .status-pill.connected {
+    border-color: rgba(76,222,128,0.3);
+    color: var(--text);
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  /* Setup panel */
+  .setup-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .panel-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--accent);
+  }
+
+  input[type="text"]::placeholder {
+    color: var(--muted);
+  }
+
+  button {
+    background: var(--accent);
+    color: #0a0a0c;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  button:hover {
+    background: #d4eb00;
+    transform: translateY(-1px);
+  }
+
+  button:active { transform: translateY(0); }
+
+  button.secondary {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  button.secondary:hover {
+    background: var(--card);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Share room */
+  .share-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .share-url {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.6rem 1rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'Courier New', monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: text;
+  }
+
+  .copy-btn {
+    padding: 0.6rem 1rem;
+    font-size: 0.8rem;
+  }
+
+  .copied-flash {
+    color: #4cde80;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .copied-flash.show { opacity: 1; }
+
+  /* Video area */
+  .video-wrapper {
+    position: relative;
+    background: #000;
+    border-radius: var(--radius);
+    overflow: hidden;
+    aspect-ratio: 16/9;
+    border: 1px solid var(--border);
+  }
+
+  video {
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.8); /* Cor preta com 50% de opacidade */
-    z-index: 1; /* Para garantir que fique acima do fundo, mas abaixo do conteúdo */
-}
+    display: block;
+    background: #000;
+  }
 
-textarea, button, #saved-notes, #settings-modal {
-    position: relative; /* Adiciona contexto para z-index */
-    z-index: 2; /* Aumenta para estar acima da sobreposição */
-}
-        #note-area {
-            width: 100%;
-            height: calc(100% - 99px);
-            padding: 20px;
-            box-sizing: border-box;
-            font-size: 18px;
-            background-color: transparent;
-            color: white;
-            border: none;
-            resize: none;
-            outline: none;
-            line-height: 1.5;
-            white-space: pre-wrap;
-        }
-
-       #save-btn, #folder-btn, #new-note-btn {
-    padding: 10px;
-    font-size: 1.80em;
-    position: fixed;
-    bottom: 0;
-    width: 50.33%;
-    height: 60px;
-    background-color: rgba(148, 0, 211, 0.5); /* Violeta com 50% de opacidade */
-    border: none;
-    color: white;
-    cursor: pointer;
-    z-index: ; /* Certifique-se de que está acima de outros elementos */
-}
-        #save-btn {
-            right: 0;
-        }
-
-        #folder-btn {
-            left: 0;
-        }
-
-        #new-note-btn {
-            left: 50%;
-            transform: translateX(-50%);
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8em;
-            background-color: #9400D3; 
-            color: white;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-        }
-
-        #saved-notes {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.9); /* Preto translúcido */
-            padding: 20px;
-            box-sizing: border-box;
-            overflow-y: scroll;
-            color: white;
-        }
-
-        .note {
-            overflow-y: auto; 
-            max-height: 100px;
-            background-color: #4B0082; /* Roxo escuro */
-            padding: 30px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            position: relative;
-            word-wrap: break-word;
-            cursor: pointer;
-        }
-
-        .delete-btn {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background-color: transparent;
-            border: none;
-            color: white;
-            font-size: 1.0em;
-            cursor: pointer;
-        }
-
-        .note-timestamp {
-            font-size: 12px;
-            color: #9400D3; /* Roxo */
-        }
-
-        #close-btn {
-            position: fixed;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: transparent;
-            border: none;
-            color: white;
-            font-size: 2em;
-            cursor: pointer;
-            z-index: 999; /* Para garantir que o X fique acima de tudo */
-        }
-  
-  
-            #settings-btn {
-    padding: 10px;
-    opacity: 1; 
-    font-size: 1.5em;
-    position: fixed;
-    bottom: 4px;
-    right: 335px;
-    background-color: transparent;
-    border: none;
-    color: #9400D3;
-    cursor: pointer;
-}
-
-#settings-modal {
-    width: 300px;
-    border-radius: 10px;
-    display: none;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: rgba(148, 0, 211, 0.2);
-    border: 1px solid #9400D3;
-    padding: 20px;
-    color: #9400D3;
-    z-index: 1000;
-}
-
-#settings-modal button {
-    border-radius: 10px;
-    background-color: #9400D3;
-    border: none;
-    color: white;
-    padding: 10px;
-    cursor: pointer;
-    margin: 10px 0; /* Adiciona uma margem de 10px em cima e embaixo dos botões */
-}
-  
-          #hide-buttons-btn {
-    padding: 10px;
-    opacity: 0.3; 
-    font-size: 1.5em;
-    position: fixed;
-    bottom: 4px; /* Um pouco acima dos botões principais */
-    right: 5px;
-    background-color: transparent;
-    border: none;
-    color: #9400D3;
-    cursor: pointer;
-    z-index: 999;
-}
-    
-  
-    #minimize-settings-btn {
+  .video-placeholder {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    background-color: transparent;
-    border: none;
-    color: #9400D3;
-    font-size: 0.7em;
-    cursor: pointer;
-}
-    
-    #change-wallpaper-btn { 
-    padding: 10px;
-    opacity: 0.3; 
-    position: fixed;
-    bottom: 60px; /* Ajuste conforme a posição desejada */
-    right: 5px;
-    background-color: transparent;
-    border: none;
-    font-size: 1.5em;
-    cursor: pointer;
-    color: white;
-    z-index: 1000;
-}
-    
-    
-    #opacity-range {
-    width: 100%; /* Ajuste a largura do controle */
-    margin-top: 10px; /* Espaçamento superior */
-}
-  
-    </style>
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    background: var(--surface);
+  }
+
+  .video-placeholder svg {
+    opacity: 0.15;
+  }
+
+  .video-placeholder p {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  /* Sync indicator overlay */
+  .sync-toast {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(10,10,12,0.85);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    color: var(--accent);
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+
+  .sync-toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Partner area */
+  .partner-bar {
+    margin-top: 1rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .partner-avatars {
+    display: flex;
+    gap: -4px;
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+
+  .avatar.me { background: var(--accent); color: #000; }
+  .avatar.partner { background: #8b5cf6; color: #fff; }
+
+  .partner-info {
+    flex: 1;
+  }
+
+  .partner-info strong {
+    display: block;
+    font-size: 0.85rem;
+  }
+
+  .partner-info span {
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .peer-count {
+    font-size: 0.8rem;
+    color: var(--muted);
+    padding: 0.3rem 0.75rem;
+    background: var(--surface);
+    border-radius: 999px;
+    border: 1px solid var(--border);
+  }
+
+  .peer-count .n {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+    font-size: 0.75rem;
+    border-top: 1px solid var(--border);
+    margin-top: 2rem;
+  }
+</style>
 </head>
 <body>
-    <div id="overlay"></div>
-    <textarea id="note-area" placeholder="✍️..."></textarea>
-    <button id="save-btn">💾</button>
-    <button id="change-wallpaper-btn">🎲</button>
-    <button id="folder-btn">📂</button>
-    <button id="new-note-btn">+</button> <!-- Botão redondo de nova nota -->
-    <button id="settings-btn">⚙️</button>
 
-    <div id="settings-modal">
-        <p>Configurações</p>
-        <button id="update-btn">Verificar Atualizações</button>
-        <button id="minimize-settings-btn">❌</button>
-        <button id="toggle-wallpaper-btn">Mudar wallpaper aleatoriamente ao entrar no app: não</button>
-        
-        <label for="opacity-range">Opacidade do Wallpaper:</label>
-        <input type="range" id="opacity-range" min="0" max="100" value="80">
-       
-        <p>App versão: 1.1</p>
+<header>
+  <div class="logo">Sync<span>Watch</span></div>
+  <div class="status-pill" id="statusPill">
+    <div class="status-dot"></div>
+    <span id="statusText">Desconectado</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- URL input -->
+  <div class="setup-panel">
+    <div class="panel-label">🎬 Link do vídeo</div>
+    <div class="input-row">
+      <input type="text" id="videoUrl" placeholder="Cole aqui o link direto do vídeo (.mp4, .m3u8, stream direto...)"/>
+      <button onclick="loadVideo()">Carregar</button>
     </div>
-</body>
-    <div id="saved-notes">
-        <button id="close-btn">X</button> <!-- Botão de fechar (X) flutuante -->
-        <div id="notes-container"></div>
+  </div>
+
+  <!-- Share link -->
+  <div class="setup-panel">
+    <div class="panel-label">🔗 Sala de sincronização</div>
+    <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.75rem;">
+      Compartilhe este link com a outra pessoa. Ambos precisam abrir <strong style="color:var(--text)">o mesmo link</strong>.
     </div>
-    <button id="hide-buttons-btn">👁️</button>
+    <div class="share-row">
+      <div class="share-url" id="shareUrl">Gerando sala...</div>
+      <button class="secondary copy-btn" onclick="copyLink()">Copiar</button>
+      <span class="copied-flash" id="copiedFlash">✓ Copiado!</span>
+    </div>
+  </div>
+
+  <!-- Video player -->
+  <div class="video-wrapper" id="videoWrapper">
+    <div class="video-placeholder" id="placeholder">
+      <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1">
+        <polygon points="5 3 19 12 5 21 5 3"/>
+      </svg>
+      <p>Cole um link de vídeo acima para começar</p>
+    </div>
+    <video id="player" controls style="display:none"></video>
+    <div class="sync-toast" id="syncToast">⚡ Sincronizando...</div>
+  </div>
+
+  <!-- Partner bar -->
+  <div class="partner-bar">
+    <div class="partner-avatars">
+      <div class="avatar me">V</div>
+    </div>
+    <div class="partner-info">
+      <strong>Sala ativa</strong>
+      <span id="partnerStatus">Aguardando outra pessoa entrar...</span>
+    </div>
+    <div class="peer-count">Conectados: <span class="n" id="peerCount">1</span></div>
+  </div>
+
 </div>
-         <audio id="rainAudio" loop volume="1.0">
-    <source src="https://soundbible.com/mp3/2_Minute_Thunderstorm-Mike_Koenig-574654058.mp3" type="audio/mpeg">
-</audio>
-        <script>
-        let editingNoteIndex = null; // Índice da nota que está sendo editada
-        const noteArea = document.getElementById('note-area');
-        const saveBtn = document.getElementById('save-btn');
-        const folderBtn = document.getElementById('folder-btn');
-        const newNoteBtn = document.getElementById('new-note-btn');
-        const savedNotesDiv = document.getElementById('saved-notes');
-        const closeBtn = document.getElementById('close-btn');
-        const notesContainer = document.getElementById('notes-container');
 
-        // Carregar notas salvas ao iniciar
-        window.onload = function() {
-            displaySavedNotes();
-        }
+<footer>SyncWatch — sem servidor, sem cadastro. Sincronização P2P via Gun.js</footer>
 
-        // Função para salvar ou editar nota
-        saveBtn.addEventListener('click', () => {
-            const noteText = noteArea.value.trim();
-            if (noteText) {
-                let notes = JSON.parse(localStorage.getItem('notes')) || [];
-                const timestamp = new Date().toLocaleString(); // Data e hora de salvamento
-                if (editingNoteIndex !== null) {
-                    // Editar nota existente
-                    notes[editingNoteIndex] = { text: noteText, timestamp };
-                    editingNoteIndex = null;
-                } else {
-                    // Criar nova nota
-                    notes.push({ text: noteText, timestamp });
-                }
-                localStorage.setItem('notes', JSON.stringify(notes));
-                noteArea.value = '';
-                displaySavedNotes();
-            } else {
-                alert('Digite algo para salvar.');
-            }
-        });
-
-        // Exibir a área de notas salvas
-        folderBtn.addEventListener('click', () => {
-            const notes = JSON.parse(localStorage.getItem('notes')) || [];
-            if (notes.length > 0) {
-                savedNotesDiv.style.display = 'block';
-            }
-        });
-
-        // Fechar a área de notas salvas
-        closeBtn.addEventListener('click', () => {
-            savedNotesDiv.style.display = 'none';
-        });
-
-        // Adicionar uma nova nota
-        newNoteBtn.addEventListener('click', () => {
-            noteArea.value = ''; // Limpar a área de texto para uma nova nota
-            editingNoteIndex = null; // Indicar que estamos criando uma nova nota
-        });
-
-        // Função para mostrar as notas salvas
-        function displaySavedNotes() {
-    notesContainer.innerHTML = ''; // Limpar notas salvas
-    const notes = JSON.parse(localStorage.getItem('notes')) || [];
-    if (notes.length > 0) {
-        notes.forEach((note, index) => {
-            const noteDiv = document.createElement('div');
-            noteDiv.className = 'note';
-            noteDiv.textContent = note.text;
-
-            // Mostrar data e hora de salvamento
-            const timestamp = document.createElement('div');
-            timestamp.className = 'note-timestamp';
-            timestamp.textContent = `Salvo em: ${note.timestamp}`;
-            noteDiv.appendChild(timestamp);
-
-            // Clique na nota para editar
-            noteDiv.addEventListener('click', () => {
-                editNote(index);
-            });
-
-            // Botão de apagar
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'delete-btn';
-            deleteBtn.textContent = '🗑️';
-            deleteBtn.addEventListener('click', (event) => {
-                event.stopPropagation(); // Evitar abrir a nota ao apagar
-                deleteNote(index);
-            });
-
-            noteDiv.appendChild(deleteBtn);
-            
-            // Adicionar a nova nota no início do contêiner
-            notesContainer.insertBefore(noteDiv, notesContainer.firstChild);
-        });
-    } else {
-        savedNotesDiv.style.display = 'none'; // Minimiza se não houver notas
-    }
+<script>
+// ─── Room ID from URL hash ────────────────────────────────────────────────
+function getRoomId() {
+  let hash = window.location.hash.slice(1);
+  if (!hash) {
+    hash = Math.random().toString(36).slice(2, 10);
+    window.history.replaceState(null, '', '#' + hash);
+  }
+  return hash;
 }
 
-        // Função para editar uma nota (sem alert)
-        function editNote(index) {
-            const notes = JSON.parse(localStorage.getItem('notes')) || [];
-            noteArea.value = notes[index].text;
-            editingNoteIndex = index;
-            savedNotesDiv.style.display = 'none'; // Minimiza a área de notas salvas
-        }
+const ROOM_ID = getRoomId();
+const SHARE_URL = window.location.href;
 
-        // Função para apagar uma nota com confirmação
-        function deleteNote(index) {
-            if (confirm('Tem certeza que deseja apagar esta nota?')) {
-                let notes = JSON.parse(localStorage.getItem('notes')) || [];
-                notes.splice(index, 1);
-                localStorage.setItem('notes', JSON.stringify(notes));
-                displaySavedNotes();
-                if (notes.length === 0) {
-                    savedNotesDiv.style.display = 'none'; // Minimiza se todas as notas forem apagadas
-                    noteArea.value = '';
-                    editingNoteIndex = null;
-                }
-            }
-        }
-                 const settingsBtn = document.getElementById('settings-btn');
-const settingsModal = document.getElementById('settings-modal');
-const updateBtn = document.getElementById('update-btn');
+document.getElementById('shareUrl').textContent = SHARE_URL;
 
-// Mostrar modal de configurações
-settingsBtn.addEventListener('click', () => {
-    settingsModal.style.display = 'block';
-});
-
-// Verificar atualizações (recarregar página)
-updateBtn.addEventListener('click', () => {
-    location.reload();
-});
-
-// Fechar modal ao clicar fora dele
-window.addEventListener('click', (event) => {
-    if (event.target === settingsModal) {
-        settingsModal.style.display = 'none';
-    }
-});
-  
-            
-        const hideButtonsBtn = document.getElementById('hide-buttons-btn');
-const mainButtons = [saveBtn, folderBtn, settingsBtn, newNoteBtn]; // Botões principais
-
-// Estado para verificar se os botões estão ocultos
-let buttonsHidden = false;
-
-// Função para ocultar/mostrar botões
-hideButtonsBtn.addEventListener('click', () => {
-    buttonsHidden = !buttonsHidden; // Alterna o estado
-    mainButtons.forEach(button => {
-        button.style.display = buttonsHidden ? 'none' : 'block'; // Oculta ou mostra os botões
-    });
-});
-
-          const minimizeSettingsBtn = document.getElementById('minimize-settings-btn');
-
-// Minimizar modal de configurações
-minimizeSettingsBtn.addEventListener('click', () => {
-    settingsModal.style.display = 'none'; // Esconder o modal
-});
-
-
-       
-      const wallpapers = [
-    'https://i.imgur.com/ihgbwuG.jpeg',
-    'https://i.imgur.com/Bz9j1mF.jpeg',
-    'https://i.imgur.com/KiN0kR3.jpeg',
-    'https://i.imgur.com/sac86E2.jpeg',
-    'https://i.imgur.com/wSwT86c.jpeg'
-];
-
-let lastIndex = -1; // Índice da última imagem escolhida
-let isChanging = false; // Flag para verificar se estamos mudando a imagem
-
-const changeWallpaperBtn = document.getElementById('change-wallpaper-btn');
-changeWallpaperBtn.addEventListener('click', () => {
-    if (isChanging) return; // Não faz nada se já está mudando
-
-    let randomIndex;
-
-    do {
-        randomIndex = Math.floor(Math.random() * wallpapers.length);
-    } while (randomIndex === lastIndex); // Garante que o índice seja diferente do anterior
-
-    lastIndex = randomIndex; // Atualiza o índice da última imagem escolhida
-    isChanging = true; // Indica que estamos mudando a imagem
-
-    const img = new Image();
-    img.src = wallpapers[randomIndex];
-    img.onload = () => {
-        document.body.style.backgroundImage = `url(${img.src})`;
-        isChanging = false; // Permite mudar a imagem novamente
-    };
-});
-
-    
-
-
-    const toggleWallpaperBtn = document.getElementById('toggle-wallpaper-btn');
-
-// Carregar a preferência do localStorage ao iniciar
-let autoChangeWallpaper = localStorage.getItem('autoChangeWallpaper') === 'true';
-
-// Atualizar o texto do botão com base na preferência
-toggleWallpaperBtn.textContent = `Mudar wallpaper aleatoriamente ao entrar no app: ${autoChangeWallpaper ? 'sim' : 'não'}`;
-
-// Função para alternar a preferência de mudar o papel de parede
-toggleWallpaperBtn.addEventListener('click', () => {
-    autoChangeWallpaper = !autoChangeWallpaper; // Alterna o estado
-    localStorage.setItem('autoChangeWallpaper', autoChangeWallpaper); // Salva a preferência no localStorage
-    toggleWallpaperBtn.textContent = `Mudar wallpaper aleatoriamente ao entrar no app: ${autoChangeWallpaper ? 'sim' : 'não'}`; // Atualiza o texto do botão
-});
-
-// Mudar o papel de parede automaticamente se a preferência estiver ativada
-if (autoChangeWallpaper) {
-    changeWallpaper(); // Chama a função para mudar o papel de parede
+function copyLink() {
+  navigator.clipboard.writeText(SHARE_URL).then(() => {
+    const flash = document.getElementById('copiedFlash');
+    flash.classList.add('show');
+    setTimeout(() => flash.classList.remove('show'), 2000);
+  });
 }
 
-// Função para mudar o papel de parede
-function changeWallpaper() {
-    if (isChanging) return; // Não faz nada se já está mudando
+// ─── Gun.js P2P sync ───────────────────────────────────────────────────────
+// Public relay peers — no setup needed
+const gun = Gun(['https://gun-manhattan.herokuapp.com/gun', 'https://gunjs.herokuapp.com/gun']);
+const room = gun.get('syncwatch-' + ROOM_ID);
 
-    let randomIndex;
+let ignoreEvents = false;
+let lastSyncTime = 0;
+let hls = null;
+let peersOnline = 1;
 
-    do {
-        randomIndex = Math.floor(Math.random() * wallpapers.length);
-    } while (randomIndex === lastIndex); // Garante que o índice seja diferente do anterior
+const player = document.getElementById('player');
+const statusPill = document.getElementById('statusPill');
+const statusText = document.getElementById('statusText');
+const peerCount = document.getElementById('peerCount');
+const partnerStatus = document.getElementById('partnerStatus');
 
-    lastIndex = randomIndex; // Atualiza o índice da última imagem escolhida
-    isChanging = true; // Indica que estamos mudando a imagem
+// ─── Heartbeat to count peers ─────────────────────────────────────────────
+const myId = Math.random().toString(36).slice(2, 8);
 
-    const img = new Image();
-    img.src = wallpapers[randomIndex];
-    img.onload = () => {
-        document.body.style.backgroundImage = `url(${img.src})`;
-        isChanging = false; // Permite mudar a imagem novamente
-    };
+function sendHeartbeat() {
+  room.get('peers').get(myId).put({ ts: Date.now(), id: myId });
 }
 
-// Chama a função para mudar o papel de parede ao carregar a página
-window.onload = function() {
-    displaySavedNotes(); // Carregar notas salvas
-    if (autoChangeWallpaper) {
-        changeWallpaper(); // Muda o papel de parede se a opção estiver ativada
-    }
-};
+sendHeartbeat();
+setInterval(sendHeartbeat, 3000);
 
-
-         const opacityRange = document.getElementById('opacity-range');
-         const overlay = document.getElementById('overlay');
-
-// Carregar a opacidade do localStorage ao iniciar
-window.onload = function() {
-    const savedOpacity = localStorage.getItem('overlayOpacity');
-    if (savedOpacity) {
-        opacityRange.value = savedOpacity;
-        updateOverlayOpacity(savedOpacity);
-    }
-};
-
-// Atualiza a opacidade do overlay
-opacityRange.addEventListener('input', (event) => {
-    const opacityValue = event.target.value;
-    localStorage.setItem('overlayOpacity', opacityValue); // Salva no localStorage
-    updateOverlayOpacity(opacityValue);
+// Track peers
+const seenPeers = {};
+room.get('peers').map().on((data, id) => {
+  if (!data) return;
+  if (Date.now() - data.ts < 8000) {
+    seenPeers[id] = data.ts;
+  }
+  // Clean stale
+  for (const k in seenPeers) {
+    if (Date.now() - seenPeers[k] > 8000) delete seenPeers[k];
+  }
+  const count = Object.keys(seenPeers).length;
+  peerCount.textContent = count;
+  if (count >= 2) {
+    partnerStatus.textContent = count + ' pessoa(s) na sala — sincronizados!';
+    statusPill.classList.add('connected');
+    statusText.textContent = 'Sincronizado';
+  } else {
+    partnerStatus.textContent = 'Aguardando outra pessoa entrar...';
+    statusPill.classList.remove('connected');
+    statusText.textContent = 'Sozinho';
+  }
 });
 
-// Função para aplicar a opacidade ao overlay
-function updateOverlayOpacity(opacityValue) {
-    overlay.style.backgroundColor = `rgba(0, 0, 0, ${opacityValue / 100})`; // Atualiza a cor de fundo do overlay
+// ─── Sync: listen for remote state ───────────────────────────────────────
+room.get('state').on((data) => {
+  if (!data || !data.from || data.from === myId) return;
+  if (!player.src || player.src === '') return;
+
+  const now = Date.now();
+  ignoreEvents = true;
+
+  if (data.action === 'play') {
+    const drift = (now - data.ts) / 1000;
+    const targetTime = data.currentTime + drift;
+    if (Math.abs(player.currentTime - targetTime) > 1) {
+      player.currentTime = targetTime;
+    }
+    player.play().catch(() => {});
+    showSyncToast('▶ Parceiro deu play');
+  } else if (data.action === 'pause') {
+    player.pause();
+    if (Math.abs(player.currentTime - data.currentTime) > 1) {
+      player.currentTime = data.currentTime;
+    }
+    showSyncToast('⏸ Parceiro pausou');
+  } else if (data.action === 'seek') {
+    player.currentTime = data.currentTime;
+    showSyncToast('⏩ Parceiro buscou');
+  } else if (data.action === 'load') {
+    if (data.url && data.url !== player.src) {
+      loadVideoUrl(data.url, false);
+      showSyncToast('🎬 Parceiro carregou vídeo');
+    }
+  }
+
+  setTimeout(() => { ignoreEvents = false; }, 500);
+});
+
+// ─── Broadcast local events ───────────────────────────────────────────────
+function broadcast(action, extra = {}) {
+  room.get('state').put({
+    action,
+    currentTime: player.currentTime,
+    ts: Date.now(),
+    from: myId,
+    ...extra
+  });
 }
 
-
-
-        // Exibir a área de notas salvas
-folderBtn.addEventListener('click', () => {
-    // Verificar notas novamente e mostrar a área de notas salvas
-    displaySavedNotes(); // Verifica as notas novamente
-    const notes = JSON.parse(localStorage.getItem('notes')) || [];
-    if (notes.length > 0) {
-        savedNotesDiv.style.display = 'block'; // Exibe a área se houver notas
-    }
+player.addEventListener('play', () => {
+  if (ignoreEvents) return;
+  broadcast('play');
 });
-    </script>
+
+player.addEventListener('pause', () => {
+  if (ignoreEvents) return;
+  broadcast('pause');
+});
+
+player.addEventListener('seeked', () => {
+  if (ignoreEvents) return;
+  const now = Date.now();
+  if (now - lastSyncTime < 300) return;
+  lastSyncTime = now;
+  broadcast('seek');
+});
+
+// ─── Load video ───────────────────────────────────────────────────────────
+function loadVideo() {
+  const url = document.getElementById('videoUrl').value.trim();
+  if (!url) return;
+  loadVideoUrl(url, true);
+}
+
+function loadVideoUrl(url, broadcast_load) {
+  const videoEl = document.getElementById('player');
+  const placeholder = document.getElementById('placeholder');
+
+  // Cleanup old HLS
+  if (hls) { hls.destroy(); hls = null; }
+
+  placeholder.style.display = 'none';
+  videoEl.style.display = 'block';
+
+  if (url.includes('.m3u8') || url.includes('m3u8')) {
+    // HLS stream
+    if (Hls.isSupported()) {
+      hls = new Hls({ enableWorker: false });
+      hls.loadSource(url);
+      hls.attachMedia(videoEl);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {});
+    } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+      videoEl.src = url;
+    }
+  } else {
+    videoEl.src = url;
+  }
+
+  document.getElementById('videoUrl').value = url;
+
+  if (broadcast_load) {
+    broadcast('load', { url });
+  }
+}
+
+// ─── Sync toast ───────────────────────────────────────────────────────────
+let toastTimeout;
+function showSyncToast(msg) {
+  const toast = document.getElementById('syncToast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+// ─── Check if room already has a video loaded ────────────────────────────
+room.get('state').once((data) => {
+  if (data && data.url) {
+    loadVideoUrl(data.url, false);
+    document.getElementById('videoUrl').value = data.url;
+  }
+});
+
+// Allow pressing Enter to load
+document.getElementById('videoUrl').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') loadVideo();
+});
+</script>
 </body>
 </html>
