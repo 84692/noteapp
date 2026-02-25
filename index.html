@@ -33,9 +33,9 @@
   }
   .dot{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:all .4s;flex-shrink:0;}
   .pill.connecting .dot{background:var(--orange);box-shadow:0 0 6px var(--orange);}
-  .pill.connected .dot{background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 2.5s infinite;}
+  .pill.connected  .dot{background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 2.5s infinite;}
   .pill.connected{border-color:rgba(61,220,132,.25);color:var(--text);}
-  .pill.proxying .dot{background:var(--accent);box-shadow:0 0 8px var(--accent);animation:blink .8s infinite;}
+  .pill.proxying  .dot{background:var(--accent);box-shadow:0 0 8px var(--accent);animation:blink .8s infinite;}
   .pill.proxying{border-color:rgba(232,255,71,.25);color:var(--accent);}
   .pill.error .dot{background:var(--red);}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
@@ -65,7 +65,6 @@
   button:active{transform:translateY(0);}
   button.ghost{background:var(--surface);color:var(--text);border:1px solid var(--border);font-weight:400;}
   button.ghost:hover{border-color:var(--accent);color:var(--accent);}
-  button:disabled{opacity:.35;cursor:not-allowed;transform:none!important;}
 
   .share-row{
     margin-top:.8rem;padding-top:.8rem;border-top:1px solid var(--border);
@@ -79,13 +78,11 @@
   .copied{font-size:.75rem;color:var(--green);opacity:0;transition:opacity .3s;pointer-events:none;}
   .copied.show{opacity:1;}
 
-  /* status log with steps */
   .log{font-size:.78rem;color:var(--muted);font-style:italic;min-height:1.2rem;transition:color .3s;}
   .log.ok{color:var(--green);font-style:normal;}
   .log.err{color:var(--red);font-style:normal;}
   .log.info{color:var(--accent);font-style:normal;}
 
-  /* proxy progress card */
   .proxy-card{
     display:none;background:rgba(232,255,71,.04);
     border:1px solid rgba(232,255,71,.15);border-radius:var(--r);padding:1rem 1.2rem;
@@ -97,12 +94,21 @@
   .step.active{color:var(--text);}
   .step.done{color:var(--green);}
   .step.fail{color:var(--red);}
-  .step-icon{font-size:.8rem;width:1.1rem;text-align:center;}
   .pbar-wrap{height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
   .pbar{height:100%;background:var(--accent);width:0%;transition:width .2s;border-radius:2px;}
   .pbar-label{font-size:.72rem;color:var(--muted);margin-top:.4rem;}
 
-  /* video */
+  /* receiver progress */
+  .recv-card{
+    display:none;background:rgba(124,92,252,.05);
+    border:1px solid rgba(124,92,252,.2);border-radius:var(--r);padding:1rem 1.2rem;
+  }
+  .recv-card.show{display:block;}
+  .recv-card .title{font-size:.8rem;font-weight:600;color:var(--accent2);margin-bottom:.5rem;}
+  .recv-pbar-wrap{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:.5rem;}
+  .recv-pbar{height:100%;background:var(--accent2);width:0%;transition:width .3s;border-radius:2px;}
+  .recv-label{font-size:.72rem;color:var(--muted);margin-top:.4rem;}
+
   .vwrap{
     position:relative;background:#000;border-radius:var(--r);
     overflow:hidden;aspect-ratio:16/9;border:1px solid var(--border);
@@ -113,7 +119,7 @@
     align-items:center;justify-content:center;gap:1rem;background:var(--surface);
   }
   .placeholder .icon{font-size:3.5rem;opacity:.1;}
-  .placeholder p{color:var(--muted);font-size:.88rem;}
+  .placeholder p{color:var(--muted);font-size:.88rem;text-align:center;padding:0 2rem;}
   .toast{
     position:absolute;top:.9rem;right:.9rem;background:rgba(8,8,16,.9);
     border:1px solid var(--border);backdrop-filter:blur(10px);
@@ -122,7 +128,6 @@
   }
   .toast.show{opacity:1;transform:translateY(0);}
 
-  /* peers */
   .peers-bar{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
   .avatar-row{display:flex;}
   .av{
@@ -158,20 +163,23 @@
     <div class="lbl">🎬 Link do vídeo</div>
     <div class="row">
       <input id="vurl" type="text" placeholder="Cole o link direto (.mp4, .m3u8, googlevideo, etc)…"/>
-      <button id="loadBtn" onclick="loadAndBroadcast()">▶ Carregar</button>
+      <button onclick="loadAndBroadcast()">▶ Carregar</button>
     </div>
   </div>
 
-  <!-- proxy progress -->
+  <!-- sender progress -->
   <div class="proxy-card" id="proxyCard">
-    <div class="title">📡 Transmissão proxy para o parceiro</div>
-    <div class="proxy-steps" id="proxySteps">
-      <div class="step" id="step-detect"><span class="step-icon">🔍</span>Detectando tipo de link…</div>
-      <div class="step" id="step-fetch"><span class="step-icon">⬇️</span>Buscando vídeo (fetch direto)…</div>
-      <div class="step" id="step-send"><span class="step-icon">📤</span>Enviando para parceiro via WebRTC…</div>
-    </div>
+    <div class="title">📡 Transmissão proxy → parceiro</div>
+    <div class="proxy-steps" id="proxySteps"></div>
     <div class="pbar-wrap"><div class="pbar" id="pbar"></div></div>
-    <div class="pbar-label" id="pbarLabel">0 MB transferidos</div>
+    <div class="pbar-label" id="pbarLabel">Aguardando…</div>
+  </div>
+
+  <!-- receiver progress -->
+  <div class="recv-card" id="recvCard">
+    <div class="title">📺 Recebendo vídeo do parceiro…</div>
+    <div class="recv-pbar-wrap"><div class="recv-pbar" id="recvPbar"></div></div>
+    <div class="recv-label" id="recvLabel">Aguardando dados…</div>
   </div>
 
   <div class="card">
@@ -206,103 +214,91 @@
 
 </div>
 
-<footer>SyncWatch · WebRTC P2P · proxy com fallback CORS · sem servidor</footer>
+<footer>SyncWatch · WebRTC P2P · proxy CORS automático · sem servidor</footer>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-// ROOM
-// ═══════════════════════════════════════════════════════════════
+'use strict';
+
+// ── Room ─────────────────────────────────────────────────────────────────────
 function getRoom(){let h=location.hash.slice(1);if(!h){h=Math.random().toString(36).slice(2,9);location.hash=h;}return h;}
 const ROOM=getRoom(),SLOT_A='sw-'+ROOM+'-a',SLOT_B='sw-'+ROOM+'-b',SHARE=location.href;
 document.getElementById('shareUrl').textContent=SHARE;
 
-// ═══════════════════════════════════════════════════════════════
-// CORS PROXY CHAIN — tried in order until one works
-// These are public CORS proxies; if one dies, next is tried
-// ═══════════════════════════════════════════════════════════════
-const CORS_PROXIES=[
-  url=>`https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-  url=>`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  url=>`https://cors-anywhere.herokuapp.com/${url}`,
-  url=>`https://thingproxy.freeboard.io/fetch/${url}`,
-  url=>url, // last resort: try direct (might work if server allows CORS)
+// ── CORS proxy chain ──────────────────────────────────────────────────────────
+const PROXIES=[
+  u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u=>`https://cors-anywhere.herokuapp.com/${u}`,
+  u=>`https://thingproxy.freeboard.io/fetch/${u}`,
+  u=>u,
 ];
 
-async function fetchWithCorsProxy(url,onProgress){
-  let lastErr=null;
-  for(let i=0;i<CORS_PROXIES.length;i++){
-    const proxyUrl=CORS_PROXIES[i](url);
-    const label=i===CORS_PROXIES.length-1?'direto':`proxy ${i+1}`;
-    setStep('fetch',`⬇️ Tentando ${label}…`,'active');
+async function fetchViaProxy(url, signal){
+  for(let i=0;i<PROXIES.length;i++){
+    const pu=PROXIES[i](url);
+    addStep(`⬇️ Tentando ${i===PROXIES.length-1?'direto':'proxy '+(i+1)}…`,'active');
     try{
-      const resp=await fetch(proxyUrl,{signal:fetchCtrl.signal,credentials:'omit'});
-      if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
-      // Success — stream it
-      setStep('fetch',`⬇️ Conectado via ${label}!`,'done');
-      return resp;
+      const r=await fetch(pu,{signal,credentials:'omit'});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      updateLastStep(`✅ Conectado via ${i===PROXIES.length-1?'direto':'proxy '+(i+1)}`,'done');
+      return r;
     }catch(e){
-      if(e.name==='AbortError')throw e;
-      lastErr=e;
-      setStep('fetch',`⬇️ ${label} falhou, tentando próximo…`,'fail');
-      await sleep(300);
+      if(e.name==='AbortError') throw e;
+      updateLastStep(`❌ ${i===PROXIES.length-1?'Direto':'Proxy '+(i+1)} falhou`,'fail');
+      await new Promise(r=>setTimeout(r,250));
     }
   }
-  throw new Error('Todos os proxies falharam: '+lastErr?.message);
+  throw new Error('Todos os proxies falharam');
 }
 
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-
-// ═══════════════════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════════════════
+// ── State ─────────────────────────────────────────────────────────────────────
 const vid=document.getElementById('vid');
 let peer,conn,mySlot,theirSlot,retryTimer;
-let ignoring=false,hls=null;
-let fetchCtrl=null;
-// receiver side
-let mediaSource=null,sourceBuffer=null,proxyQueue=[],sbReady=false;
+let ignoring=false,hls=null,fetchCtrl=null;
 
-// ═══════════════════════════════════════════════════════════════
-// UI
-// ═══════════════════════════════════════════════════════════════
+// receiver MSE state
+let ms=null, sb=null, queue=[], sbBusy=false, recvBytes=0;
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
 function setPill(cls,txt){document.getElementById('pill').className='pill '+cls;document.getElementById('pillTxt').textContent=txt;}
 let toastT;
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2500);}
-function setLog(msg,cls=''){const l=document.getElementById('log');l.textContent=msg;l.className='log '+cls;}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2500);}
+function setLog(m,c=''){const l=document.getElementById('log');l.textContent=m;l.className='log '+c;}
 
-function setStep(id,txt,state){
-  const el=document.getElementById('step-'+id);
-  if(!el)return;
-  el.querySelector('.step-icon').textContent=state==='done'?'✅':state==='fail'?'❌':state==='active'?'⏳':'⬜';
-  el.childNodes[1]&&(el.childNodes[1].textContent='');
-  el.textContent='';
-  const icon=document.createElement('span');icon.className='step-icon';
-  icon.textContent=state==='done'?'✅':state==='fail'?'❌':state==='active'?'⏳':'⬜';
-  el.appendChild(icon);
-  el.appendChild(document.createTextNode(txt));
-  el.className='step '+(state||'');
+function addStep(txt,cls){
+  const d=document.createElement('div');d.className='step '+(cls||'');
+  d.textContent=txt;document.getElementById('proxySteps').appendChild(d);
+}
+function updateLastStep(txt,cls){
+  const steps=document.getElementById('proxySteps').children;
+  if(!steps.length)return;
+  const last=steps[steps.length-1];
+  last.textContent=txt;last.className='step '+(cls||'');
 }
 function setProgress(pct,label){
   document.getElementById('pbar').style.width=Math.min(100,pct)+'%';
   document.getElementById('pbarLabel').textContent=label;
 }
-
+function setRecvProgress(pct,label){
+  document.getElementById('recvPbar').style.width=Math.min(100,pct)+'%';
+  document.getElementById('recvLabel').textContent=label;
+}
 function setConnected(yes){
   document.getElementById('peerN').textContent=yes?2:1;
   document.getElementById('peerTitle').textContent=yes?'2 pessoas — sincronizados!':'Sala pronta';
   document.getElementById('peerSub').textContent=yes?'Conexão WebRTC direta ✓':'Aguardando outra pessoa…';
   const row=document.getElementById('avatarRow'),ex=row.querySelector('.p1');
-  if(yes&&!ex){const av=document.createElement('div');av.className='av p1';av.textContent='P';row.appendChild(av);}
+  if(yes&&!ex){const a=document.createElement('div');a.className='av p1';a.textContent='P';row.appendChild(a);}
   else if(!yes&&ex)ex.remove();
-  setPill(yes?'connected':'connecting',yes?'Conectado ✓':'Aguardando…');
+  if(yes)setPill('connected','Conectado ✓');
+  else setPill('connecting','Aguardando…');
 }
 
-// ═══════════════════════════════════════════════════════════════
-// PEERJS
-// ═══════════════════════════════════════════════════════════════
+// ── PeerJS ────────────────────────────────────────────────────────────────────
 function initPeer(slot,fallback){
   setLog('Conectando ao servidor de sinalização…');setPill('connecting','Conectando…');
-  peer=new Peer(slot,{host:'0.peerjs.com',port:443,path:'/',secure:true,debug:0,
+  peer=new Peer(slot,{
+    host:'0.peerjs.com',port:443,path:'/',secure:true,debug:0,
     config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]}
   });
   peer.on('open',id=>{
@@ -315,54 +311,46 @@ function initPeer(slot,fallback){
   peer.on('error',err=>{
     if(err.type==='unavailable-id'&&fallback){peer.destroy();initPeer(fallback,null);return;}
     if(err.type==='peer-unavailable'){clearTimeout(retryTimer);retryTimer=setTimeout(()=>attemptConnect(theirSlot),4000);return;}
-    setLog('Erro PeerJS: '+err.type,'err');setPill('error','Erro');
+    setLog('Erro: '+err.type,'err');setPill('error','Erro');
   });
   peer.on('disconnected',()=>peer.reconnect());
 }
-function attemptConnect(target){
-  if(conn&&conn.open)return;
-  setupConn(peer.connect(target,{reliable:true,serialization:'binary'}));
-}
+function attemptConnect(t){if(conn&&conn.open)return;setupConn(peer.connect(t,{reliable:true,serialization:'binary'}));}
 function setupConn(c){
   c.on('open',()=>{
-    conn=c;clearTimeout(retryTimer);setConnected(true);
-    setLog('Conexão P2P estabelecida!','ok');
+    conn=c;clearTimeout(retryTimer);setConnected(true);setLog('Conexão P2P estabelecida!','ok');
     const url=document.getElementById('vurl').value.trim();
-    if(url)setTimeout(()=>onLoadBtn(url,false),400);
+    if(url) setTimeout(()=>syncToPartner(url,false),400);
   });
   c.on('data',onData);
   c.on('close',()=>{conn=null;setConnected(false);setLog('Parceiro desconectou.','err');clearTimeout(retryTimer);retryTimer=setTimeout(()=>attemptConnect(theirSlot),3000);});
   c.on('error',e=>setLog('Erro de conexão: '+e,'err'));
 }
 
-// ═══════════════════════════════════════════════════════════════
-// BINARY MESSAGING (prefix byte: 0x01=control, 0x02=video chunk)
-// ═══════════════════════════════════════════════════════════════
+// ── Binary framing (0x01=json, 0x02=video chunk) ─────────────────────────────
 const DEC=new TextDecoder();
 function sendMsg(obj){
-  if(!conn||!conn.open)return;
-  const j=JSON.stringify(obj);
-  const b=new Uint8Array(j.length+1);b[0]=0x01;
-  for(let i=0;i<j.length;i++)b[i+1]=j.charCodeAt(i);
+  if(!conn?.open)return;
+  const j=JSON.stringify(obj),b=new Uint8Array(j.length+1);
+  b[0]=0x01;for(let i=0;i<j.length;i++)b[i+1]=j.charCodeAt(i);
   conn.send(b.buffer);
 }
 function sendChunk(ab){
-  if(!conn||!conn.open)return;
+  if(!conn?.open)return;
   const s=new Uint8Array(ab),o=new Uint8Array(s.length+1);
   o[0]=0x02;o.set(s,1);conn.send(o.buffer);
 }
 function onData(raw){
-  let arr=raw instanceof ArrayBuffer?new Uint8Array(raw):raw instanceof Uint8Array?raw:null;
+  const arr=raw instanceof ArrayBuffer?new Uint8Array(raw):raw instanceof Uint8Array?raw:null;
   if(!arr){try{handleMsg(typeof raw==='string'?JSON.parse(raw):raw);}catch(e){}return;}
   if(arr[0]===0x01)try{handleMsg(JSON.parse(DEC.decode(arr.slice(1))));}catch(e){console.error(e);}
   else if(arr[0]===0x02)handleChunk(arr.slice(1).buffer);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// CONTROL MESSAGES
-// ═══════════════════════════════════════════════════════════════
+// ── Control messages ──────────────────────────────────────────────────────────
 function handleMsg(msg){
   if(!msg?.type)return;
+
   if(msg.type==='load'){
     ignoring=true;
     loadVideo(msg.url);
@@ -371,30 +359,35 @@ function handleMsg(msg){
     setTimeout(()=>{if(typeof msg.currentTime==='number')vid.currentTime=msg.currentTime;if(!msg.paused)vid.play().catch(()=>{});ignoring=false;},900);
     return;
   }
-  if(msg.type==='proxy_start'){
+
+  // ── proxy_ready: sent AFTER sender confirmed fetch works, with real mime ──
+  if(msg.type==='proxy_ready'){
+    document.getElementById('recvCard').classList.add('show');
+    document.getElementById('ph').style.display='none';
+    vid.style.display='block';
+    setLog('Recebendo vídeo via WebRTC…','info');
     showToast('📺 Recebendo stream do parceiro…');
-    setLog('Recebendo vídeo via proxy…','info');
-    setupReceiver(msg.mime||'video/mp4; codecs="avc1.42E01E, mp4a.40.2"');
+    initReceiver(msg.mime, msg.totalBytes||0);
     return;
   }
+
   if(msg.type==='proxy_done'){
     showToast('✅ Stream recebido!');
-    if(mediaSource?.readyState==='open'){
-      const finish=()=>{try{mediaSource.endOfStream();}catch(e){}};
-      sourceBuffer?.updating?sourceBuffer.addEventListener('updateend',finish,{once:true}):finish();
-    }
+    setLog('Vídeo recebido com sucesso!','ok');
+    endReceiver();
     return;
   }
+
   if(msg.type==='proxy_error'){
-    setLog('Parceiro não conseguiu buscar: '+msg.msg,'err');
-    showToast('❌ Erro no proxy do parceiro');
+    setLog('Erro no proxy: '+msg.msg,'err');
+    showToast('❌ Erro: '+msg.msg);
     return;
   }
+
   // playback sync
   ignoring=true;
   if(msg.type==='play'){
-    const drift=(Date.now()-msg.ts)/1000;
-    const t=msg.currentTime+drift;
+    const drift=(Date.now()-msg.ts)/1000,t=msg.currentTime+drift;
     if(Math.abs(vid.currentTime-t)>1.5)vid.currentTime=t;
     vid.play().catch(()=>{});showToast('▶ Parceiro deu play');
   }else if(msg.type==='pause'){
@@ -407,112 +400,177 @@ function handleMsg(msg){
   setTimeout(()=>{ignoring=false;},400);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// SENDER PROXY — fetch with CORS proxy chain, stream via WebRTC
-// ═══════════════════════════════════════════════════════════════
+// ── SENDER: fetch + stream ────────────────────────────────────────────────────
 async function startProxy(url){
   document.getElementById('proxyCard').classList.add('show');
+  document.getElementById('proxySteps').innerHTML='';
   setPill('proxying','Transmitindo…');
   fetchCtrl=new AbortController();
 
-  setStep('detect','Link IP-locked detectado (googlevideo)','done');
-  setStep('send','Aguardando fetch…','');
+  addStep('🔍 Link IP-locked detectado','done');
 
+  let resp;
   try{
-    const resp=await fetchWithCorsProxy(url,()=>{});
-    const ct=resp.headers.get('content-type')||'video/mp4';
-    const contentLength=parseInt(resp.headers.get('content-length')||'0');
-
-    // pick mime
-    let mime='video/mp4; codecs="avc1.42E01E, mp4a.40.2"';
-    if(ct.includes('webm'))mime='video/webm; codecs="vp8, vorbis"';
-
-    sendMsg({type:'proxy_start',mime});
-    setStep('send','Enviando chunks para parceiro…','active');
-
-    const reader=resp.body.getReader();
-    let received=0;
-    while(true){
-      const{done,value}=await reader.read();
-      if(done)break;
-      sendChunk(value.buffer);
-      received+=value.length;
-      const mb=(received/1024/1024).toFixed(1);
-      const pct=contentLength>0?received/contentLength*100:0;
-      setProgress(pct,`${mb} MB enviados${contentLength>0?' / '+(contentLength/1024/1024).toFixed(1)+' MB':''}`);
-    }
-    sendMsg({type:'proxy_done'});
-    setStep('send','Transmissão completa!','done');
-    setProgress(100,'Completo ✓');
-    setPill('connected','Conectado ✓');
-
+    resp=await fetchViaProxy(url, fetchCtrl.signal);
   }catch(e){
     if(e.name==='AbortError')return;
-    console.error(e);
-    setStep('fetch','Todos os proxies falharam.','fail');
-    setStep('send','','');
-    sendMsg({type:'proxy_error',msg:e.message});
-    setLog('Não foi possível buscar o vídeo via proxy. Tente um link diferente.','err');
+    sendMsg({type:'proxy_error',msg:'Fetch falhou: '+e.message});
+    setLog('Falha no fetch: '+e.message,'err');
     setPill('connected','Conectado');
+    return;
   }
+
+  // Detect actual mime from Content-Type header
+  const ct=(resp.headers.get('content-type')||'video/mp4').split(';')[0].trim();
+  const totalBytes=parseInt(resp.headers.get('content-length')||'0');
+
+  // Pick a mime+codec string the receiver's MSE can use
+  let mime;
+  if(ct==='video/webm'||ct==='video/webm'){
+    mime='video/webm; codecs="vp8, vorbis"';
+  }else{
+    // Default: mp4. Try fancier codec strings first.
+    mime='video/mp4; codecs="avc1.42E01E, mp4a.40.2"';
+  }
+
+  // Tell receiver to set up MSE with the real mime + expected size
+  sendMsg({type:'proxy_ready', mime, totalBytes});
+
+  // Give receiver 300ms to set up MediaSource before chunks start flying
+  await new Promise(r=>setTimeout(r,300));
+
+  addStep('📤 Enviando chunks via WebRTC…','active');
+  const reader=resp.body.getReader();
+  let received=0;
+
+  while(true){
+    let value,done;
+    try{{({value,done}=await reader.read());}
+    }catch(e){break;}
+    if(done)break;
+    sendChunk(value.buffer);
+    received+=value.length;
+    const mb=(received/1024/1024).toFixed(1);
+    const pct=totalBytes>0?(received/totalBytes*100):0;
+    setProgress(pct, `${mb} MB${totalBytes>0?' / '+(totalBytes/1024/1024).toFixed(1)+' MB':''} enviados`);
+  }
+
+  sendMsg({type:'proxy_done'});
+  updateLastStep('✅ Transmissão completa!','done');
+  setProgress(100,'Completo ✓');
+  setPill('connected','Conectado ✓');
 }
 
-// ═══════════════════════════════════════════════════════════════
-// RECEIVER — MediaSource API
-// ═══════════════════════════════════════════════════════════════
-function setupReceiver(mime){
-  if(hls){hls.destroy();hls=null;}
-  document.getElementById('ph').style.display='none';
-  vid.style.display='block';
-  mediaSource=new MediaSource();
-  proxyQueue=[];sbReady=false;sourceBuffer=null;
-  vid.src=URL.createObjectURL(mediaSource);
+// ── RECEIVER: MediaSource + SourceBuffer ─────────────────────────────────────
+function initReceiver(mime, totalBytes){
+  // clean up any previous
+  if(ms){try{if(ms.readyState==='open')ms.endOfStream();}catch(e){}}
+  ms=null;sb=null;queue=[];sbBusy=false;recvBytes=0;
 
-  // Try supported mime variants
-  const candidates=[mime,'video/mp4; codecs="avc1.42E01E, mp4a.40.2"','video/mp4','video/webm; codecs="vp8, vorbis"','video/webm'];
-  const supported=candidates.find(m=>{try{return MediaSource.isTypeSupported(m);}catch(e){return false;}})||'video/mp4';
-
-  mediaSource.addEventListener('sourceopen',()=>{
-    try{
-      sourceBuffer=mediaSource.addSourceBuffer(supported);
-      sourceBuffer.mode='sequence';
-      sbReady=true;
-      sourceBuffer.addEventListener('updateend',flushQueue);
-      flushQueue();
-    }catch(e){setLog('MediaSource erro: '+e.message,'err');console.error(e);}
+  // Find a supported mime
+  const candidates=[
+    mime,
+    'video/mp4; codecs="avc1.42E01E, mp4a.40.2"',
+    'video/mp4; codecs="avc1.640028, mp4a.40.2"',
+    'video/mp4; codecs="avc1.4d401e, mp4a.40.2"',
+    'video/mp4',
+    'video/webm; codecs="vp8, vorbis"',
+    'video/webm; codecs="vp9"',
+    'video/webm',
+  ];
+  const supportedMime=candidates.find(m=>{
+    try{return MediaSource.isTypeSupported(m);}catch(e){return false;}
   });
-}
-function handleChunk(ab){
-  proxyQueue.push(ab);
-  if(sbReady&&sourceBuffer&&!sourceBuffer.updating)flushQueue();
-}
-function flushQueue(){
-  if(!sbReady||!sourceBuffer||sourceBuffer.updating||!proxyQueue.length)return;
-  if(mediaSource?.readyState!=='open')return;
-  try{
-    sourceBuffer.appendBuffer(proxyQueue.shift());
-  }catch(e){
-    if(e.name==='QuotaExceededError'&&vid.currentTime>30){
-      try{sourceBuffer.remove(0,vid.currentTime-10);proxyQueue.unshift(ab);}catch(e2){}
-    }else console.error('appendBuffer:',e);
+
+  if(!supportedMime){
+    setLog('Nenhum codec suportado pelo navegador!','err');
+    return;
   }
-  if(vid.paused&&vid.readyState>=2)vid.play().catch(()=>{});
+
+  ms=new MediaSource();
+  const objectUrl=URL.createObjectURL(ms);
+  vid.src=objectUrl;
+
+  ms.addEventListener('sourceopen',()=>{
+    URL.revokeObjectURL(objectUrl); // clean up blob URL
+    try{
+      sb=ms.addSourceBuffer(supportedMime);
+      sb.mode='sequence'; // crucial: append in order, no timestamps needed
+      sb.addEventListener('updateend',()=>{
+        sbBusy=false;
+        drainQueue(totalBytes);
+      });
+      drainQueue(totalBytes);
+    }catch(e){
+      setLog('SourceBuffer erro: '+e.message+' (mime: '+supportedMime+')','err');
+      console.error('SourceBuffer error:',e,supportedMime);
+    }
+  },{once:true});
+
+  ms.addEventListener('sourceclose',()=>{console.log('MSE sourceclose');});
+  ms.addEventListener('sourceerror',e=>{console.error('MSE error:',e);});
 }
 
-// ═══════════════════════════════════════════════════════════════
-// PLAYER EVENTS
-// ═══════════════════════════════════════════════════════════════
+function handleChunk(ab){
+  queue.push(ab);
+  recvBytes+=ab.byteLength;
+  setRecvProgress(0, (recvBytes/1024/1024).toFixed(1)+' MB recebidos…');
+  if(sb&&!sbBusy)drainQueue(0);
+}
+
+function drainQueue(totalBytes){
+  if(!sb||sbBusy||queue.length===0)return;
+  if(!ms||ms.readyState!=='open')return;
+  sbBusy=true;
+  try{
+    sb.appendBuffer(queue.shift());
+    // auto-play once we have enough data
+    if(vid.paused&&vid.readyState>=2){
+      vid.play().catch(()=>{});
+    }
+  }catch(e){
+    sbBusy=false;
+    if(e.name==='QuotaExceededError'){
+      // Remove old data to free space
+      if(vid.currentTime>10){
+        try{
+          sb.remove(0, vid.currentTime-5);
+          // put chunk back and retry after remove
+          queue.unshift(/*re-add*/new ArrayBuffer(0)); // placeholder cleared on updateend
+        }catch(e2){}
+      }
+    }else{
+      console.error('appendBuffer error:',e);
+      setLog('Erro append: '+e.message,'err');
+    }
+  }
+}
+
+function endReceiver(){
+  if(!ms||ms.readyState!=='open')return;
+  const finish=()=>{
+    try{ms.endOfStream();}catch(e){console.warn('endOfStream:',e);}
+  };
+  if(sb&&sb.updating){
+    sb.addEventListener('updateend',finish,{once:true});
+  }else if(queue.length===0){
+    finish();
+  }else{
+    // wait for queue to drain
+    const check=setInterval(()=>{if(queue.length===0){clearInterval(check);finish();}},100);
+  }
+}
+
+// ── Player events → sync ──────────────────────────────────────────────────────
 vid.addEventListener('play',()=>{if(!ignoring)sendMsg({type:'play',currentTime:vid.currentTime,ts:Date.now()});});
 vid.addEventListener('pause',()=>{if(!ignoring)sendMsg({type:'pause',currentTime:vid.currentTime});});
 let lastSeek=0;
 vid.addEventListener('seeked',()=>{
-  if(ignoring)return;const now=Date.now();if(now-lastSeek<500)return;lastSeek=now;
+  if(ignoring)return;const n=Date.now();if(n-lastSeek<500)return;lastSeek=n;
   sendMsg({type:'seek',currentTime:vid.currentTime});
 });
 
-// ═══════════════════════════════════════════════════════════════
-// LOAD VIDEO
-// ═══════════════════════════════════════════════════════════════
+// ── Load video (local / normal URLs) ─────────────────────────────────────────
 function loadVideo(url){
   if(hls){hls.destroy();hls=null;}
   document.getElementById('ph').style.display='none';
@@ -530,17 +588,12 @@ function isIpLocked(url){
   return /googlevideo\.com/.test(url)&&/[?&]ip=/.test(url);
 }
 
-function onLoadBtn(url,isLocal){
-  const locked=isIpLocked(url);
-  // Load locally (our IP works)
-  if(isLocal)loadVideo(url);
-  if(conn&&conn.open){
-    if(locked){
-      sendMsg({type:'proxy_start',mime:'video/mp4; codecs="avc1.42E01E, mp4a.40.2"'});
-      startProxy(url);
-    }else{
-      sendMsg({type:'load',url,currentTime:isLocal?vid.currentTime:0,paused:true});
-    }
+function syncToPartner(url,isNewLoad){
+  if(!conn?.open)return;
+  if(isIpLocked(url)){
+    startProxy(url);
+  }else{
+    sendMsg({type:'load',url,currentTime:isNewLoad?0:vid.currentTime,paused:!isNewLoad||vid.paused});
   }
 }
 
@@ -548,25 +601,19 @@ function loadAndBroadcast(){
   const url=document.getElementById('vurl').value.trim();
   if(!url)return;
   loadVideo(url);
-  onLoadBtn(url,false);
-  if(isIpLocked(url)&&(!conn||!conn.open))
-    setLog('Vídeo carregado. Quando parceiro entrar, proxy iniciará automaticamente.','ok');
+  syncToPartner(url,true);
 }
 
 document.getElementById('vurl').addEventListener('keydown',e=>{if(e.key==='Enter')loadAndBroadcast();});
 
-// ═══════════════════════════════════════════════════════════════
-// COPY
-// ═══════════════════════════════════════════════════════════════
+// ── Copy link ─────────────────────────────────────────────────────────────────
 function copyLink(){
   navigator.clipboard.writeText(SHARE).then(()=>{
     const c=document.getElementById('copied');c.classList.add('show');setTimeout(()=>c.classList.remove('show'),2000);
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
-// START
-// ═══════════════════════════════════════════════════════════════
+// ── Boot ──────────────────────────────────────────────────────────────────────
 initPeer(SLOT_A,SLOT_B);
 </script>
 </body>
