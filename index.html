@@ -8,15 +8,15 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
-  :root {
+  :root{
     --bg:#080810;--surface:#0f0f18;--card:#14141f;--border:#252535;
     --accent:#e8ff47;--accent2:#7c5cfc;--green:#3ddc84;--red:#ff4757;
-    --text:#ececf0;--muted:#5a5a72;--r:8px;
+    --orange:#f5a623;--text:#ececf0;--muted:#5a5a72;--r:8px;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
   body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
   body::after{
-    content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.15;
+    content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.14;
     background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
     background-size:48px 48px;
   }
@@ -26,20 +26,19 @@
   }
   .logo{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;letter-spacing:3px;color:var(--accent);}
   .logo span{color:var(--text);}
-
   .pill{
     margin-left:auto;display:flex;align-items:center;gap:.5rem;
     background:var(--card);border:1px solid var(--border);
     padding:.35rem .9rem;border-radius:999px;font-size:.78rem;color:var(--muted);transition:all .4s;
   }
   .dot{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:all .4s;flex-shrink:0;}
-  .pill.connecting .dot{background:#f5a623;box-shadow:0 0 6px #f5a623;}
+  .pill.connecting .dot{background:var(--orange);box-shadow:0 0 6px var(--orange);}
   .pill.connected .dot{background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 2.5s infinite;}
   .pill.connected{border-color:rgba(61,220,132,.25);color:var(--text);}
-  .pill.proxying .dot{background:var(--accent);box-shadow:0 0 8px var(--accent);animation:blink 1s infinite;}
+  .pill.proxying .dot{background:var(--accent);box-shadow:0 0 8px var(--accent);animation:blink .8s infinite;}
   .pill.proxying{border-color:rgba(232,255,71,.25);color:var(--accent);}
   .pill.error .dot{background:var(--red);}
-  @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
 
   .wrap{
     position:relative;z-index:5;max-width:900px;margin:0 auto;
@@ -65,8 +64,8 @@
   button:hover{background:#d4eb00;transform:translateY(-1px);}
   button:active{transform:translateY(0);}
   button.ghost{background:var(--surface);color:var(--text);border:1px solid var(--border);font-weight:400;}
-  button.ghost:hover{border-color:var(--accent);color:var(--accent);background:var(--surface);}
-  button:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+  button.ghost:hover{border-color:var(--accent);color:var(--accent);}
+  button:disabled{opacity:.35;cursor:not-allowed;transform:none!important;}
 
   .share-row{
     margin-top:.8rem;padding-top:.8rem;border-top:1px solid var(--border);
@@ -80,26 +79,30 @@
   .copied{font-size:.75rem;color:var(--green);opacity:0;transition:opacity .3s;pointer-events:none;}
   .copied.show{opacity:1;}
 
-  /* MODE BADGE */
-  .mode-badge{
-    display:inline-flex;align-items:center;gap:.4rem;
-    padding:.3rem .8rem;border-radius:999px;font-size:.72rem;font-weight:500;
-    border:1px solid var(--border);background:var(--surface);color:var(--muted);
-    margin-bottom:.7rem;
-  }
-  .mode-badge.proxy{border-color:rgba(232,255,71,.3);color:var(--accent);background:rgba(232,255,71,.05);}
-  .mode-badge.stream{border-color:rgba(124,92,252,.3);color:var(--accent2);background:rgba(124,92,252,.05);}
+  /* status log with steps */
+  .log{font-size:.78rem;color:var(--muted);font-style:italic;min-height:1.2rem;transition:color .3s;}
+  .log.ok{color:var(--green);font-style:normal;}
+  .log.err{color:var(--red);font-style:normal;}
+  .log.info{color:var(--accent);font-style:normal;}
 
-  /* proxy progress */
-  .proxy-info{
-    display:none;margin-top:.7rem;padding:.7rem .9rem;
-    background:rgba(232,255,71,.05);border:1px solid rgba(232,255,71,.15);
-    border-radius:var(--r);font-size:.78rem;color:var(--accent);
+  /* proxy progress card */
+  .proxy-card{
+    display:none;background:rgba(232,255,71,.04);
+    border:1px solid rgba(232,255,71,.15);border-radius:var(--r);padding:1rem 1.2rem;
   }
-  .proxy-info.show{display:block;}
-  .pbar-wrap{height:3px;background:var(--border);border-radius:2px;margin-top:.5rem;overflow:hidden;}
-  .pbar{height:100%;background:var(--accent);width:0%;transition:width .3s;border-radius:2px;}
+  .proxy-card.show{display:block;}
+  .proxy-card .title{font-size:.8rem;font-weight:600;color:var(--accent);margin-bottom:.6rem;}
+  .proxy-steps{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.7rem;}
+  .step{font-size:.75rem;color:var(--muted);display:flex;align-items:center;gap:.5rem;}
+  .step.active{color:var(--text);}
+  .step.done{color:var(--green);}
+  .step.fail{color:var(--red);}
+  .step-icon{font-size:.8rem;width:1.1rem;text-align:center;}
+  .pbar-wrap{height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+  .pbar{height:100%;background:var(--accent);width:0%;transition:width .2s;border-radius:2px;}
+  .pbar-label{font-size:.72rem;color:var(--muted);margin-top:.4rem;}
 
+  /* video */
   .vwrap{
     position:relative;background:#000;border-radius:var(--r);
     overflow:hidden;aspect-ratio:16/9;border:1px solid var(--border);
@@ -109,17 +112,17 @@
     position:absolute;inset:0;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:1rem;background:var(--surface);
   }
-  .placeholder .icon{font-size:3.5rem;opacity:.12;}
+  .placeholder .icon{font-size:3.5rem;opacity:.1;}
   .placeholder p{color:var(--muted);font-size:.88rem;}
-
   .toast{
-    position:absolute;top:.9rem;right:.9rem;background:rgba(8,8,16,.88);
-    border:1px solid var(--border);backdrop-filter:blur(12px);
+    position:absolute;top:.9rem;right:.9rem;background:rgba(8,8,16,.9);
+    border:1px solid var(--border);backdrop-filter:blur(10px);
     padding:.4rem .9rem;border-radius:999px;font-size:.72rem;color:var(--accent);
     opacity:0;transform:translateY(-4px);transition:all .3s;pointer-events:none;
   }
   .toast.show{opacity:1;transform:translateY(0);}
 
+  /* peers */
   .peers-bar{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
   .avatar-row{display:flex;}
   .av{
@@ -136,10 +139,6 @@
   .badge{padding:.28rem .75rem;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-size:.75rem;color:var(--muted);}
   .badge span{color:var(--accent);font-weight:600;}
 
-  .log{font-size:.75rem;color:var(--muted);font-style:italic;min-height:1.1rem;transition:color .3s;}
-  .log.ok{color:var(--green);}
-  .log.err{color:var(--red);}
-
   footer{
     position:relative;z-index:5;text-align:center;
     padding:1.5rem;color:var(--muted);font-size:.72rem;border-top:1px solid var(--border);
@@ -155,22 +154,26 @@
 
 <div class="wrap">
 
-  <!-- VIDEO URL -->
   <div class="card">
     <div class="lbl">🎬 Link do vídeo</div>
-    <div class="mode-badge" id="modeBadge">⬤ Detecção automática</div>
     <div class="row">
       <input id="vurl" type="text" placeholder="Cole o link direto (.mp4, .m3u8, googlevideo, etc)…"/>
       <button id="loadBtn" onclick="loadAndBroadcast()">▶ Carregar</button>
     </div>
-    <!-- proxy progress shown to sender -->
-    <div class="proxy-info" id="proxyInfo">
-      <span id="proxyTxt">📡 Transmitindo vídeo diretamente para o parceiro via WebRTC…</span>
-      <div class="pbar-wrap"><div class="pbar" id="pbar"></div></div>
-    </div>
   </div>
 
-  <!-- SHARE -->
+  <!-- proxy progress -->
+  <div class="proxy-card" id="proxyCard">
+    <div class="title">📡 Transmissão proxy para o parceiro</div>
+    <div class="proxy-steps" id="proxySteps">
+      <div class="step" id="step-detect"><span class="step-icon">🔍</span>Detectando tipo de link…</div>
+      <div class="step" id="step-fetch"><span class="step-icon">⬇️</span>Buscando vídeo (fetch direto)…</div>
+      <div class="step" id="step-send"><span class="step-icon">📤</span>Enviando para parceiro via WebRTC…</div>
+    </div>
+    <div class="pbar-wrap"><div class="pbar" id="pbar"></div></div>
+    <div class="pbar-label" id="pbarLabel">0 MB transferidos</div>
+  </div>
+
   <div class="card">
     <div class="lbl">🔗 Compartilhar sala</div>
     <div id="log" class="log">Gerando sala P2P…</div>
@@ -181,7 +184,6 @@
     </div>
   </div>
 
-  <!-- PLAYER -->
   <div class="vwrap">
     <div class="placeholder" id="ph">
       <div class="icon">▶</div>
@@ -191,10 +193,9 @@
     <div class="toast" id="toast"></div>
   </div>
 
-  <!-- PEERS -->
   <div class="card">
     <div class="peers-bar">
-      <div class="avatar-row" id="avatarRow"><div class="av me" title="Você">V</div></div>
+      <div class="avatar-row" id="avatarRow"><div class="av me">V</div></div>
       <div class="peers-info">
         <strong id="peerTitle">Sala pronta</strong>
         <small id="peerSub">Aguardando outra pessoa…</small>
@@ -205,98 +206,107 @@
 
 </div>
 
-<footer>SyncWatch · WebRTC P2P · proxy automático para links IP-locked · sem servidor</footer>
+<footer>SyncWatch · WebRTC P2P · proxy com fallback CORS · sem servidor</footer>
 
 <script>
-// ═══════════════════════════════════════════════════════════
-// ROOM SETUP
-// ═══════════════════════════════════════════════════════════
-function getRoom(){
-  let h=location.hash.slice(1);
-  if(!h){h=Math.random().toString(36).slice(2,9);location.hash=h;}
-  return h;
-}
-const ROOM  =getRoom();
-const SLOT_A='sw-'+ROOM+'-a';
-const SLOT_B='sw-'+ROOM+'-b';
-const SHARE =location.href;
+// ═══════════════════════════════════════════════════════════════
+// ROOM
+// ═══════════════════════════════════════════════════════════════
+function getRoom(){let h=location.hash.slice(1);if(!h){h=Math.random().toString(36).slice(2,9);location.hash=h;}return h;}
+const ROOM=getRoom(),SLOT_A='sw-'+ROOM+'-a',SLOT_B='sw-'+ROOM+'-b',SHARE=location.href;
 document.getElementById('shareUrl').textContent=SHARE;
 
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// CORS PROXY CHAIN — tried in order until one works
+// These are public CORS proxies; if one dies, next is tried
+// ═══════════════════════════════════════════════════════════════
+const CORS_PROXIES=[
+  url=>`https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  url=>`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url=>`https://cors-anywhere.herokuapp.com/${url}`,
+  url=>`https://thingproxy.freeboard.io/fetch/${url}`,
+  url=>url, // last resort: try direct (might work if server allows CORS)
+];
+
+async function fetchWithCorsProxy(url,onProgress){
+  let lastErr=null;
+  for(let i=0;i<CORS_PROXIES.length;i++){
+    const proxyUrl=CORS_PROXIES[i](url);
+    const label=i===CORS_PROXIES.length-1?'direto':`proxy ${i+1}`;
+    setStep('fetch',`⬇️ Tentando ${label}…`,'active');
+    try{
+      const resp=await fetch(proxyUrl,{signal:fetchCtrl.signal,credentials:'omit'});
+      if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
+      // Success — stream it
+      setStep('fetch',`⬇️ Conectado via ${label}!`,'done');
+      return resp;
+    }catch(e){
+      if(e.name==='AbortError')throw e;
+      lastErr=e;
+      setStep('fetch',`⬇️ ${label} falhou, tentando próximo…`,'fail');
+      await sleep(300);
+    }
+  }
+  throw new Error('Todos os proxies falharam: '+lastErr?.message);
+}
+
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+// ═══════════════════════════════════════════════════════════════
 // STATE
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 const vid=document.getElementById('vid');
-let peer,conn,mySlot,theirSlot;
-let ignoring=false,hls=null,retryTimer=null;
+let peer,conn,mySlot,theirSlot,retryTimer;
+let ignoring=false,hls=null;
+let fetchCtrl=null;
+// receiver side
+let mediaSource=null,sourceBuffer=null,proxyQueue=[],sbReady=false;
 
-// Proxy state
-let proxyMode=false;      // true = we are the sender/proxy
-let mediaSource=null;
-let sourceBuffer=null;
-let sbReady=false;
-let proxyQueue=[];
-let fetchController=null;
-let totalProxied=0;
-let proxyMime='video/mp4; codecs="avc1.42E01E, mp4a.40.2"';
+// ═══════════════════════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════════════════════
+function setPill(cls,txt){document.getElementById('pill').className='pill '+cls;document.getElementById('pillTxt').textContent=txt;}
+let toastT;
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2500);}
+function setLog(msg,cls=''){const l=document.getElementById('log');l.textContent=msg;l.className='log '+cls;}
 
-// ═══════════════════════════════════════════════════════════
-// UI HELPERS
-// ═══════════════════════════════════════════════════════════
-function setPill(cls,txt){
-  const p=document.getElementById('pill');
-  p.className='pill '+cls;
-  document.getElementById('pillTxt').textContent=txt;
+function setStep(id,txt,state){
+  const el=document.getElementById('step-'+id);
+  if(!el)return;
+  el.querySelector('.step-icon').textContent=state==='done'?'✅':state==='fail'?'❌':state==='active'?'⏳':'⬜';
+  el.childNodes[1]&&(el.childNodes[1].textContent='');
+  el.textContent='';
+  const icon=document.createElement('span');icon.className='step-icon';
+  icon.textContent=state==='done'?'✅':state==='fail'?'❌':state==='active'?'⏳':'⬜';
+  el.appendChild(icon);
+  el.appendChild(document.createTextNode(txt));
+  el.className='step '+(state||'');
 }
-let toastTimer;
-function showToast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+function setProgress(pct,label){
+  document.getElementById('pbar').style.width=Math.min(100,pct)+'%';
+  document.getElementById('pbarLabel').textContent=label;
 }
-function setLog(msg,cls=''){
-  const l=document.getElementById('log');
-  l.textContent=msg;l.className='log '+cls;
-}
+
 function setConnected(yes){
   document.getElementById('peerN').textContent=yes?2:1;
   document.getElementById('peerTitle').textContent=yes?'2 pessoas — sincronizados!':'Sala pronta';
   document.getElementById('peerSub').textContent=yes?'Conexão WebRTC direta ✓':'Aguardando outra pessoa…';
-  const row=document.getElementById('avatarRow');
-  const ex=row.querySelector('.p1');
-  if(yes&&!ex){const av=document.createElement('div');av.className='av p1';av.title='Parceiro';av.textContent='P';row.appendChild(av);}
+  const row=document.getElementById('avatarRow'),ex=row.querySelector('.p1');
+  if(yes&&!ex){const av=document.createElement('div');av.className='av p1';av.textContent='P';row.appendChild(av);}
   else if(!yes&&ex)ex.remove();
-  if(yes)setPill('connected','Conectado ✓');
-  else setPill('connecting','Aguardando…');
-}
-function setModeBadge(mode){
-  const b=document.getElementById('modeBadge');
-  if(mode==='proxy'){b.className='mode-badge proxy';b.textContent='📡 Modo proxy — transmitindo para parceiro';}
-  else if(mode==='stream'){b.className='mode-badge stream';b.textContent='📺 Recebendo stream do parceiro';}
-  else{b.className='mode-badge';b.textContent='⬤ Detecção automática';}
+  setPill(yes?'connected':'connecting',yes?'Conectado ✓':'Aguardando…');
 }
 
-// ═══════════════════════════════════════════════════════════
-// DETECT IP-LOCKED LINK
-// ═══════════════════════════════════════════════════════════
-function isIpLocked(url){
-  // googlevideo with &ip= param — locked to requester's IP
-  return /googlevideo\.com/.test(url)&&/[?&]ip=/.test(url);
-}
-
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // PEERJS
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 function initPeer(slot,fallback){
-  setLog('Conectando ao servidor de sinalização…');
-  setPill('connecting','Conectando…');
-  peer=new Peer(slot,{
-    host:'0.peerjs.com',port:443,path:'/',secure:true,debug:0,
+  setLog('Conectando ao servidor de sinalização…');setPill('connecting','Conectando…');
+  peer=new Peer(slot,{host:'0.peerjs.com',port:443,path:'/',secure:true,debug:0,
     config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]}
   });
   peer.on('open',id=>{
-    mySlot=id;
-    theirSlot=(id===SLOT_A)?SLOT_B:SLOT_A;
+    mySlot=id;theirSlot=id===SLOT_A?SLOT_B:SLOT_A;
     setLog('Sala pronta · aguardando parceiro…','ok');
     setPill('connecting','Aguardando parceiro…');
     attemptConnect(theirSlot);
@@ -305,308 +315,204 @@ function initPeer(slot,fallback){
   peer.on('error',err=>{
     if(err.type==='unavailable-id'&&fallback){peer.destroy();initPeer(fallback,null);return;}
     if(err.type==='peer-unavailable'){clearTimeout(retryTimer);retryTimer=setTimeout(()=>attemptConnect(theirSlot),4000);return;}
-    setLog('Erro: '+err.type,'err');setPill('error','Erro');
+    setLog('Erro PeerJS: '+err.type,'err');setPill('error','Erro');
   });
-  peer.on('disconnected',()=>{setLog('Reconectando…','err');peer.reconnect();});
+  peer.on('disconnected',()=>peer.reconnect());
 }
 function attemptConnect(target){
   if(conn&&conn.open)return;
-  // Use binary for proxy chunks, but we'll handle type in data
-  const c=peer.connect(target,{reliable:true,serialization:'binary'});
-  setupConn(c);
+  setupConn(peer.connect(target,{reliable:true,serialization:'binary'}));
 }
 function setupConn(c){
   c.on('open',()=>{
-    conn=c;clearTimeout(retryTimer);
-    setConnected(true);
-    setLog('Conexão P2P direta estabelecida!','ok');
+    conn=c;clearTimeout(retryTimer);setConnected(true);
+    setLog('Conexão P2P estabelecida!','ok');
     const url=document.getElementById('vurl').value.trim();
-    if(url){
-      setTimeout(()=>{
-        const locked=isIpLocked(url);
-        if(locked){
-          // Tell partner to prepare for proxy stream
-          sendMsg({type:'proxy_start',mime:proxyMime});
-          startProxy(url);
-        } else {
-          sendMsg({type:'load',url,currentTime:vid.currentTime,paused:vid.paused});
-        }
-      },400);
-    }
+    if(url)setTimeout(()=>onLoadBtn(url,false),400);
   });
   c.on('data',onData);
-  c.on('close',()=>{
-    conn=null;setConnected(false);
-    setLog('Parceiro desconectou.','err');
-    clearTimeout(retryTimer);
-    retryTimer=setTimeout(()=>attemptConnect(theirSlot),3000);
-  });
-  c.on('error',e=>setLog('Erro: '+e,'err'));
+  c.on('close',()=>{conn=null;setConnected(false);setLog('Parceiro desconectou.','err');clearTimeout(retryTimer);retryTimer=setTimeout(()=>attemptConnect(theirSlot),3000);});
+  c.on('error',e=>setLog('Erro de conexão: '+e,'err'));
 }
 
-// ═══════════════════════════════════════════════════════════
-// MESSAGING  (JSON wrapped in Uint8Array for binary channel)
-// ═══════════════════════════════════════════════════════════
-const ENC=new TextEncoder();
+// ═══════════════════════════════════════════════════════════════
+// BINARY MESSAGING (prefix byte: 0x01=control, 0x02=video chunk)
+// ═══════════════════════════════════════════════════════════════
 const DEC=new TextDecoder();
-
 function sendMsg(obj){
   if(!conn||!conn.open)return;
-  // prefix with 0x01 = control message
-  const json=JSON.stringify(obj);
-  const buf=new Uint8Array(json.length+1);
-  buf[0]=0x01;
-  for(let i=0;i<json.length;i++)buf[i+1]=json.charCodeAt(i);
-  conn.send(buf.buffer);
+  const j=JSON.stringify(obj);
+  const b=new Uint8Array(j.length+1);b[0]=0x01;
+  for(let i=0;i<j.length;i++)b[i+1]=j.charCodeAt(i);
+  conn.send(b.buffer);
 }
 function sendChunk(ab){
   if(!conn||!conn.open)return;
-  // prefix 0x02 = video chunk
-  const src=new Uint8Array(ab);
-  const out=new Uint8Array(src.length+1);
-  out[0]=0x02;
-  out.set(src,1);
-  conn.send(out.buffer);
+  const s=new Uint8Array(ab),o=new Uint8Array(s.length+1);
+  o[0]=0x02;o.set(s,1);conn.send(o.buffer);
 }
-
 function onData(raw){
-  let arr;
-  if(raw instanceof ArrayBuffer)arr=new Uint8Array(raw);
-  else if(raw instanceof Uint8Array)arr=raw;
-  else{
-    // fallback plain object (shouldn't happen with binary serialization)
-    try{handleMsg(typeof raw==='string'?JSON.parse(raw):raw);}catch(e){}
-    return;
-  }
-  const type=arr[0];
-  if(type===0x01){
-    // control
-    try{handleMsg(JSON.parse(DEC.decode(arr.slice(1))));}catch(e){console.error(e);}
-  } else if(type===0x02){
-    // video chunk
-    handleChunk(arr.slice(1).buffer);
-  }
+  let arr=raw instanceof ArrayBuffer?new Uint8Array(raw):raw instanceof Uint8Array?raw:null;
+  if(!arr){try{handleMsg(typeof raw==='string'?JSON.parse(raw):raw);}catch(e){}return;}
+  if(arr[0]===0x01)try{handleMsg(JSON.parse(DEC.decode(arr.slice(1))));}catch(e){console.error(e);}
+  else if(arr[0]===0x02)handleChunk(arr.slice(1).buffer);
 }
 
+// ═══════════════════════════════════════════════════════════════
+// CONTROL MESSAGES
+// ═══════════════════════════════════════════════════════════════
 function handleMsg(msg){
-  if(!msg||!msg.type)return;
-
+  if(!msg?.type)return;
   if(msg.type==='load'){
     ignoring=true;
     loadVideo(msg.url);
     document.getElementById('vurl').value=msg.url;
-    showToast('🎬 Parceiro carregou um vídeo');
-    setTimeout(()=>{
-      if(typeof msg.currentTime==='number')vid.currentTime=msg.currentTime;
-      if(!msg.paused)vid.play().catch(()=>{});
-      ignoring=false;
-    },900);
+    showToast('🎬 Parceiro carregou vídeo');
+    setTimeout(()=>{if(typeof msg.currentTime==='number')vid.currentTime=msg.currentTime;if(!msg.paused)vid.play().catch(()=>{});ignoring=false;},900);
     return;
   }
-
   if(msg.type==='proxy_start'){
-    // Partner will stream the video to us
-    proxyMime=msg.mime||proxyMime;
-    setModeBadge('stream');
-    setLog('Recebendo stream do parceiro…','ok');
-    showToast('📺 Recebendo vídeo do parceiro…');
-    setupMediaSource();
+    showToast('📺 Recebendo stream do parceiro…');
+    setLog('Recebendo vídeo via proxy…','info');
+    setupReceiver(msg.mime||'video/mp4; codecs="avc1.42E01E, mp4a.40.2"');
     return;
   }
-
-  if(msg.type==='proxy_mime'){
-    // update mime after initial detection
-    proxyMime=msg.mime;
-    if(sourceBuffer&&!sbReady){
-      // sourceBuffer already added with wrong mime, recreate
-      // just proceed, browser will try
-    }
-    return;
-  }
-
   if(msg.type==='proxy_done'){
-    showToast('✅ Stream completo');
-    if(sourceBuffer&&mediaSource&&mediaSource.readyState==='open'){
-      try{
-        if(!sourceBuffer.updating)mediaSource.endOfStream();
-        else sourceBuffer.addEventListener('updateend',()=>{try{mediaSource.endOfStream();}catch(e){}},{once:true});
-      }catch(e){}
+    showToast('✅ Stream recebido!');
+    if(mediaSource?.readyState==='open'){
+      const finish=()=>{try{mediaSource.endOfStream();}catch(e){}};
+      sourceBuffer?.updating?sourceBuffer.addEventListener('updateend',finish,{once:true}):finish();
     }
     return;
   }
-
   if(msg.type==='proxy_error'){
-    setLog('Erro no proxy: '+msg.msg,'err');
-    showToast('❌ Erro ao buscar vídeo');
+    setLog('Parceiro não conseguiu buscar: '+msg.msg,'err');
+    showToast('❌ Erro no proxy do parceiro');
     return;
   }
-
-  // Playback sync
+  // playback sync
   ignoring=true;
   if(msg.type==='play'){
     const drift=(Date.now()-msg.ts)/1000;
-    const target=msg.currentTime+drift;
-    if(Math.abs(vid.currentTime-target)>1.5)vid.currentTime=target;
-    vid.play().catch(()=>{});
-    showToast('▶ Parceiro deu play');
-  } else if(msg.type==='pause'){
+    const t=msg.currentTime+drift;
+    if(Math.abs(vid.currentTime-t)>1.5)vid.currentTime=t;
+    vid.play().catch(()=>{});showToast('▶ Parceiro deu play');
+  }else if(msg.type==='pause'){
     vid.pause();
     if(Math.abs(vid.currentTime-msg.currentTime)>1)vid.currentTime=msg.currentTime;
     showToast('⏸ Parceiro pausou');
-  } else if(msg.type==='seek'){
-    vid.currentTime=msg.currentTime;
-    showToast('⏩ Parceiro avançou');
+  }else if(msg.type==='seek'){
+    vid.currentTime=msg.currentTime;showToast('⏩ Parceiro avançou');
   }
   setTimeout(()=>{ignoring=false;},400);
 }
 
-// ═══════════════════════════════════════════════════════════
-// PROXY: sender fetches video and streams chunks via WebRTC
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// SENDER PROXY — fetch with CORS proxy chain, stream via WebRTC
+// ═══════════════════════════════════════════════════════════════
 async function startProxy(url){
-  proxyMode=true;
-  setModeBadge('proxy');
+  document.getElementById('proxyCard').classList.add('show');
   setPill('proxying','Transmitindo…');
-  document.getElementById('proxyInfo').classList.add('show');
-  document.getElementById('proxyTxt').textContent='📡 Buscando vídeo e transmitindo para o parceiro…';
+  fetchCtrl=new AbortController();
 
-  fetchController=new AbortController();
+  setStep('detect','Link IP-locked detectado (googlevideo)','done');
+  setStep('send','Aguardando fetch…','');
+
   try{
-    const resp=await fetch(url,{signal:fetchController.signal,mode:'cors',credentials:'omit'});
-    if(!resp.ok)throw new Error('HTTP '+resp.status);
-
-    // Detect real MIME from Content-Type
-    const ct=resp.headers.get('content-type')||'';
-    let detectedMime='video/mp4';
-    if(ct.includes('mp4'))detectedMime='video/mp4';
-    else if(ct.includes('webm'))detectedMime='video/webm';
-    else if(ct.includes('ogg'))detectedMime='video/ogg';
-
-    proxyMime=detectedMime+'; codecs="avc1.42E01E, mp4a.40.2"';
-    // Tell partner actual mime
-    sendMsg({type:'proxy_mime',mime:proxyMime});
-
+    const resp=await fetchWithCorsProxy(url,()=>{});
+    const ct=resp.headers.get('content-type')||'video/mp4';
     const contentLength=parseInt(resp.headers.get('content-length')||'0');
+
+    // pick mime
+    let mime='video/mp4; codecs="avc1.42E01E, mp4a.40.2"';
+    if(ct.includes('webm'))mime='video/webm; codecs="vp8, vorbis"';
+
+    sendMsg({type:'proxy_start',mime});
+    setStep('send','Enviando chunks para parceiro…','active');
+
     const reader=resp.body.getReader();
     let received=0;
-
     while(true){
-      const {done,value}=await reader.read();
+      const{done,value}=await reader.read();
       if(done)break;
       sendChunk(value.buffer);
       received+=value.length;
-      totalProxied=received;
-      if(contentLength>0){
-        const pct=Math.min(100,Math.round(received/contentLength*100));
-        document.getElementById('pbar').style.width=pct+'%';
-        document.getElementById('proxyTxt').textContent=
-          `📡 Transmitindo… ${pct}% (${(received/1024/1024).toFixed(1)} MB)`;
-      } else {
-        document.getElementById('proxyTxt').textContent=
-          `📡 Transmitindo… ${(received/1024/1024).toFixed(1)} MB enviados`;
-      }
+      const mb=(received/1024/1024).toFixed(1);
+      const pct=contentLength>0?received/contentLength*100:0;
+      setProgress(pct,`${mb} MB enviados${contentLength>0?' / '+(contentLength/1024/1024).toFixed(1)+' MB':''}`);
     }
     sendMsg({type:'proxy_done'});
-    document.getElementById('proxyTxt').textContent='✅ Transmissão completa!';
-    document.getElementById('pbar').style.width='100%';
+    setStep('send','Transmissão completa!','done');
+    setProgress(100,'Completo ✓');
     setPill('connected','Conectado ✓');
 
-  } catch(e){
+  }catch(e){
     if(e.name==='AbortError')return;
-    console.error('Proxy fetch error:',e);
+    console.error(e);
+    setStep('fetch','Todos os proxies falharam.','fail');
+    setStep('send','','');
     sendMsg({type:'proxy_error',msg:e.message});
-    setLog('Erro ao buscar vídeo: '+e.message,'err');
-    // Fallback: try to send URL directly anyway
-    sendMsg({type:'load',url,currentTime:vid.currentTime,paused:vid.paused});
-    setModeBadge('auto');
-    document.getElementById('proxyInfo').classList.remove('show');
+    setLog('Não foi possível buscar o vídeo via proxy. Tente um link diferente.','err');
+    setPill('connected','Conectado');
   }
 }
 
-// ═══════════════════════════════════════════════════════════
-// PROXY: receiver — MediaSource + SourceBuffer
-// ═══════════════════════════════════════════════════════════
-function setupMediaSource(){
+// ═══════════════════════════════════════════════════════════════
+// RECEIVER — MediaSource API
+// ═══════════════════════════════════════════════════════════════
+function setupReceiver(mime){
+  if(hls){hls.destroy();hls=null;}
   document.getElementById('ph').style.display='none';
   vid.style.display='block';
-
-  // Try to find a supported codec combo
-  const candidates=[
-    'video/mp4; codecs="avc1.42E01E, mp4a.40.2"',
-    'video/mp4; codecs="avc1.64001E, mp4a.40.2"',
-    'video/mp4',
-    'video/webm; codecs="vp8, vorbis"',
-    'video/webm; codecs="vp9"',
-    'video/webm',
-  ];
-  let mime=proxyMime;
-  if(!MediaSource.isTypeSupported(mime)){
-    mime=candidates.find(c=>MediaSource.isTypeSupported(c))||'video/mp4';
-  }
-
   mediaSource=new MediaSource();
+  proxyQueue=[];sbReady=false;sourceBuffer=null;
   vid.src=URL.createObjectURL(mediaSource);
-  proxyQueue=[];
-  sbReady=false;
-  sourceBuffer=null;
+
+  // Try supported mime variants
+  const candidates=[mime,'video/mp4; codecs="avc1.42E01E, mp4a.40.2"','video/mp4','video/webm; codecs="vp8, vorbis"','video/webm'];
+  const supported=candidates.find(m=>{try{return MediaSource.isTypeSupported(m);}catch(e){return false;}})||'video/mp4';
 
   mediaSource.addEventListener('sourceopen',()=>{
     try{
-      sourceBuffer=mediaSource.addSourceBuffer(mime);
+      sourceBuffer=mediaSource.addSourceBuffer(supported);
       sourceBuffer.mode='sequence';
       sbReady=true;
       sourceBuffer.addEventListener('updateend',flushQueue);
       flushQueue();
-    }catch(e){
-      setLog('MediaSource erro: '+e.message,'err');
-      console.error(e);
-    }
+    }catch(e){setLog('MediaSource erro: '+e.message,'err');console.error(e);}
   });
 }
-
 function handleChunk(ab){
   proxyQueue.push(ab);
   if(sbReady&&sourceBuffer&&!sourceBuffer.updating)flushQueue();
 }
-
 function flushQueue(){
-  if(!sbReady||!sourceBuffer||sourceBuffer.updating||proxyQueue.length===0)return;
-  if(mediaSource.readyState!=='open')return;
-  const chunk=proxyQueue.shift();
+  if(!sbReady||!sourceBuffer||sourceBuffer.updating||!proxyQueue.length)return;
+  if(mediaSource?.readyState!=='open')return;
   try{
-    sourceBuffer.appendBuffer(chunk);
+    sourceBuffer.appendBuffer(proxyQueue.shift());
   }catch(e){
-    console.error('appendBuffer error:',e);
-    // If quota exceeded, try to remove old data
     if(e.name==='QuotaExceededError'&&vid.currentTime>30){
-      try{
-        sourceBuffer.remove(0,vid.currentTime-10);
-        // re-queue
-        proxyQueue.unshift(chunk);
-      }catch(e2){console.error(e2);}
-    }
+      try{sourceBuffer.remove(0,vid.currentTime-10);proxyQueue.unshift(ab);}catch(e2){}
+    }else console.error('appendBuffer:',e);
   }
-  // Auto-play once we have some buffered
-  if(vid.paused&&vid.readyState>=2){
-    vid.play().catch(()=>{});
-  }
+  if(vid.paused&&vid.readyState>=2)vid.play().catch(()=>{});
 }
 
-// ═══════════════════════════════════════════════════════════
-// PLAYER EVENTS → SYNC
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// PLAYER EVENTS
+// ═══════════════════════════════════════════════════════════════
 vid.addEventListener('play',()=>{if(!ignoring)sendMsg({type:'play',currentTime:vid.currentTime,ts:Date.now()});});
 vid.addEventListener('pause',()=>{if(!ignoring)sendMsg({type:'pause',currentTime:vid.currentTime});});
 let lastSeek=0;
 vid.addEventListener('seeked',()=>{
-  if(ignoring)return;
-  const now=Date.now();if(now-lastSeek<500)return;lastSeek=now;
+  if(ignoring)return;const now=Date.now();if(now-lastSeek<500)return;lastSeek=now;
   sendMsg({type:'seek',currentTime:vid.currentTime});
 });
 
-// ═══════════════════════════════════════════════════════════
-// LOAD VIDEO (normal, non-locked)
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// LOAD VIDEO
+// ═══════════════════════════════════════════════════════════════
 function loadVideo(url){
   if(hls){hls.destroy();hls=null;}
   document.getElementById('ph').style.display='none';
@@ -615,50 +521,52 @@ function loadVideo(url){
     if(Hls.isSupported()){hls=new Hls({enableWorker:false});hls.loadSource(url);hls.attachMedia(vid);}
     else if(vid.canPlayType('application/vnd.apple.mpegurl'))vid.src=url;
     else setLog('HLS não suportado.','err');
-  } else {
+  }else{
     vid.src=url;
+  }
+}
+
+function isIpLocked(url){
+  return /googlevideo\.com/.test(url)&&/[?&]ip=/.test(url);
+}
+
+function onLoadBtn(url,isLocal){
+  const locked=isIpLocked(url);
+  // Load locally (our IP works)
+  if(isLocal)loadVideo(url);
+  if(conn&&conn.open){
+    if(locked){
+      sendMsg({type:'proxy_start',mime:'video/mp4; codecs="avc1.42E01E, mp4a.40.2"'});
+      startProxy(url);
+    }else{
+      sendMsg({type:'load',url,currentTime:isLocal?vid.currentTime:0,paused:true});
+    }
   }
 }
 
 function loadAndBroadcast(){
   const url=document.getElementById('vurl').value.trim();
   if(!url)return;
-
-  const locked=isIpLocked(url);
-
-  // Load locally first (we have the right IP)
   loadVideo(url);
-  setModeBadge(locked?'proxy':'auto');
-
-  if(conn&&conn.open){
-    if(locked){
-      // Stream to partner instead of sending URL
-      sendMsg({type:'proxy_start',mime:proxyMime});
-      startProxy(url);
-    } else {
-      sendMsg({type:'load',url,currentTime:0,paused:true});
-    }
-  } else {
-    // No partner yet — will sync when they connect (in setupConn open handler)
-    setLog('Vídeo carregado. Aguardando parceiro para sincronizar…','ok');
-  }
+  onLoadBtn(url,false);
+  if(isIpLocked(url)&&(!conn||!conn.open))
+    setLog('Vídeo carregado. Quando parceiro entrar, proxy iniciará automaticamente.','ok');
 }
 
 document.getElementById('vurl').addEventListener('keydown',e=>{if(e.key==='Enter')loadAndBroadcast();});
 
-// ═══════════════════════════════════════════════════════════
-// COPY LINK
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// COPY
+// ═══════════════════════════════════════════════════════════════
 function copyLink(){
   navigator.clipboard.writeText(SHARE).then(()=>{
-    const c=document.getElementById('copied');
-    c.classList.add('show');setTimeout(()=>c.classList.remove('show'),2000);
+    const c=document.getElementById('copied');c.classList.add('show');setTimeout(()=>c.classList.remove('show'),2000);
   });
 }
 
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // START
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 initPeer(SLOT_A,SLOT_B);
 </script>
 </body>
