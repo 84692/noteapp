@@ -4,351 +4,265 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SyncWatch</title>
-<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0a0c;
-    --surface: #111114;
-    --card: #18181d;
-    --border: #2a2a32;
+    --bg: #080810;
+    --surface: #0f0f18;
+    --card: #14141f;
+    --border: #252535;
     --accent: #e8ff47;
-    --accent2: #ff4757;
-    --text: #f0f0f0;
-    --muted: #666672;
-    --radius: 10px;
+    --accent2: #7c5cfc;
+    --green: #3ddc84;
+    --red: #ff4757;
+    --text: #ececf0;
+    --muted: #5a5a72;
+    --r: 8px;
   }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin:0; padding:0; box-sizing:border-box; }
 
   body {
     background: var(--bg);
     color: var(--text);
     font-family: 'DM Sans', sans-serif;
     min-height: 100vh;
-    overflow-x: hidden;
   }
 
-  /* Grain overlay */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 9999;
-    opacity: 0.5;
+  body::after {
+    content:'';
+    position:fixed;
+    inset:0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity:0.18;
+    pointer-events:none;
+    z-index:0;
   }
 
   header {
-    padding: 1.5rem 2rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    border-bottom: 1px solid var(--border);
+    position:relative;
+    z-index:10;
+    padding: 1.2rem 2rem;
+    display:flex;
+    align-items:center;
+    gap:1rem;
+    border-bottom:1px solid var(--border);
+    background: rgba(8,8,16,0.8);
+    backdrop-filter: blur(12px);
   }
 
   .logo {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2rem;
-    letter-spacing: 2px;
-    color: var(--accent);
-    text-shadow: 0 0 30px rgba(232,255,71,0.3);
+    font-family:'Bebas Neue', sans-serif;
+    font-size:1.9rem;
+    letter-spacing:3px;
+    color:var(--accent);
   }
-
-  .logo span {
-    color: var(--text);
-  }
+  .logo span { color:var(--text); }
 
   .status-pill {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: var(--card);
-    border: 1px solid var(--border);
-    padding: 0.4rem 1rem;
-    border-radius: 999px;
-    font-size: 0.8rem;
-    color: var(--muted);
-    transition: all 0.3s;
+    margin-left:auto;
+    display:flex;
+    align-items:center;
+    gap:0.5rem;
+    background:var(--card);
+    border:1px solid var(--border);
+    padding:0.35rem 0.9rem;
+    border-radius:999px;
+    font-size:0.78rem;
+    color:var(--muted);
+    transition: all 0.4s;
+  }
+  .dot { width:7px; height:7px; border-radius:50%; background:var(--muted); transition: all 0.4s; flex-shrink:0; }
+  .status-pill.connecting .dot { background:#f5a623; box-shadow:0 0 6px #f5a623; }
+  .status-pill.connected  .dot { background:var(--green); box-shadow:0 0 8px var(--green); animation:blink 2.5s infinite; }
+  .status-pill.connected  { border-color:rgba(61,220,132,0.25); color:var(--text); }
+  .status-pill.error      .dot { background:var(--red); }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  .wrap {
+    position:relative;
+    z-index:5;
+    max-width:900px;
+    margin:0 auto;
+    padding:1.8rem 1.5rem;
+    display:flex;
+    flex-direction:column;
+    gap:1.2rem;
   }
 
-  .status-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--muted);
-    transition: all 0.3s;
+  .card {
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--r);
+    padding:1.2rem 1.4rem;
   }
 
-  .status-pill.connected .status-dot {
-    background: #4cde80;
-    box-shadow: 0 0 8px #4cde80;
-    animation: pulse 2s infinite;
+  .label {
+    font-size:0.68rem;
+    font-weight:500;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:.65rem;
   }
 
-  .status-pill.connected {
-    border-color: rgba(76,222,128,0.3);
-    color: var(--text);
-  }
+  .row { display:flex; gap:.7rem; align-items:stretch; }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+  input {
+    flex:1;
+    background:var(--surface);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:.7rem 1rem;
+    border-radius:var(--r);
+    font-family:inherit;
+    font-size:.88rem;
+    outline:none;
+    transition: border-color .2s, box-shadow .2s;
   }
-
-  .container {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 2rem;
-  }
-
-  /* Setup panel */
-  .setup-panel {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .panel-label {
-    font-size: 0.7rem;
-    font-weight: 500;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 0.75rem;
-  }
-
-  .input-row {
-    display: flex;
-    gap: 0.75rem;
-  }
-
-  input[type="text"] {
-    flex: 1;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 0.75rem 1rem;
-    border-radius: var(--radius);
-    font-family: inherit;
-    font-size: 0.9rem;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  input[type="text"]:focus {
-    border-color: var(--accent);
-  }
-
-  input[type="text"]::placeholder {
-    color: var(--muted);
-  }
+  input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(232,255,71,.07); }
+  input::placeholder { color:var(--muted); font-style:italic; }
 
   button {
-    background: var(--accent);
-    color: #0a0a0c;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: var(--radius);
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 500;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
+    background:var(--accent);
+    color:#080810;
+    border:none;
+    padding:.7rem 1.4rem;
+    border-radius:var(--r);
+    font-family:inherit;
+    font-weight:600;
+    font-size:.85rem;
+    cursor:pointer;
+    transition: all .18s;
+    white-space:nowrap;
+    display:inline-flex;
+    align-items:center;
+    gap:.4rem;
   }
-
-  button:hover {
-    background: #d4eb00;
-    transform: translateY(-1px);
+  button:hover { background:#d4eb00; transform:translateY(-1px); }
+  button:active { transform:translateY(0); }
+  button.ghost {
+    background:var(--surface);
+    color:var(--text);
+    border:1px solid var(--border);
+    font-weight:400;
   }
+  button.ghost:hover { border-color:var(--accent); color:var(--accent); background:var(--surface); }
 
-  button:active { transform: translateY(0); }
-
-  button.secondary {
-    background: var(--surface);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-
-  button.secondary:hover {
-    background: var(--card);
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  /* Share room */
   .share-row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-top: 0.75rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--border);
+    margin-top:.8rem;
+    padding-top:.8rem;
+    border-top:1px solid var(--border);
+    display:flex;
+    gap:.7rem;
+    align-items:center;
   }
-
   .share-url {
-    flex: 1;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 0.6rem 1rem;
-    font-size: 0.8rem;
-    color: var(--muted);
-    font-family: 'Courier New', monospace;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    cursor: text;
+    flex:1;
+    font-family:'Courier New',monospace;
+    font-size:.75rem;
+    color:var(--muted);
+    background:var(--surface);
+    border:1px solid var(--border);
+    padding:.55rem .9rem;
+    border-radius:var(--r);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    cursor:default;
+    user-select:all;
   }
+  .copied { font-size:.75rem; color:var(--green); opacity:0; transition:opacity .3s; pointer-events:none; }
+  .copied.show { opacity:1; }
 
-  .copy-btn {
-    padding: 0.6rem 1rem;
-    font-size: 0.8rem;
+  .vwrap {
+    position:relative;
+    background:#000;
+    border-radius:var(--r);
+    overflow:hidden;
+    aspect-ratio:16/9;
+    border:1px solid var(--border);
   }
+  video { width:100%; height:100%; display:block; background:#000; }
 
-  .copied-flash {
-    color: #4cde80;
-    font-size: 0.8rem;
-    opacity: 0;
-    transition: opacity 0.3s;
+  .placeholder {
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:1rem;
+    background:var(--surface);
   }
+  .placeholder .icon { font-size:3.5rem; opacity:.12; }
+  .placeholder p { color:var(--muted); font-size:.88rem; }
 
-  .copied-flash.show { opacity: 1; }
-
-  /* Video area */
-  .video-wrapper {
-    position: relative;
-    background: #000;
-    border-radius: var(--radius);
-    overflow: hidden;
-    aspect-ratio: 16/9;
-    border: 1px solid var(--border);
+  .toast {
+    position:absolute;
+    top:.9rem;
+    right:.9rem;
+    background:rgba(8,8,16,.88);
+    border:1px solid var(--border);
+    backdrop-filter:blur(12px);
+    padding:.4rem .9rem;
+    border-radius:999px;
+    font-size:.72rem;
+    color:var(--accent);
+    opacity:0;
+    transform:translateY(-4px);
+    transition: all .3s;
+    pointer-events:none;
   }
+  .toast.show { opacity:1; transform:translateY(0); }
 
-  video {
-    width: 100%;
-    height: 100%;
-    display: block;
-    background: #000;
+  .peers-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+  .avatar-row { display:flex; }
+  .av {
+    width:30px; height:30px;
+    border-radius:50%;
+    border:2px solid var(--bg);
+    display:flex; align-items:center; justify-content:center;
+    font-size:.75rem; font-weight:600;
+    margin-left:-4px;
   }
+  .av:first-child { margin-left:0; }
+  .av.me  { background:var(--accent);  color:#000; }
+  .av.p1  { background:var(--accent2); color:#fff; }
 
-  .video-placeholder {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    background: var(--surface);
+  .peers-info { flex:1; }
+  .peers-info strong { display:block; font-size:.83rem; }
+  .peers-info small  { font-size:.73rem; color:var(--muted); }
+
+  .badge {
+    padding:.28rem .75rem;
+    border-radius:999px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    font-size:.75rem; color:var(--muted);
   }
+  .badge span { color:var(--accent); font-weight:600; }
 
-  .video-placeholder svg {
-    opacity: 0.15;
+  .log {
+    font-size:.75rem; color:var(--muted); font-style:italic;
+    min-height:1.1rem; transition: color .3s;
   }
+  .log.ok   { color:var(--green); }
+  .log.err  { color:var(--red); }
+  .log.info { color:var(--accent); }
 
-  .video-placeholder p {
-    color: var(--muted);
-    font-size: 0.9rem;
-  }
-
-  /* Sync indicator overlay */
-  .sync-toast {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: rgba(10,10,12,0.85);
-    border: 1px solid var(--border);
-    backdrop-filter: blur(10px);
-    padding: 0.5rem 1rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    color: var(--accent);
-    opacity: 0;
-    transform: translateY(-4px);
-    transition: all 0.3s;
-    pointer-events: none;
-  }
-
-  .sync-toast.show {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  /* Partner area */
-  .partner-bar {
-    margin-top: 1rem;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .partner-avatars {
-    display: flex;
-    gap: -4px;
-  }
-
-  .avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: 2px solid var(--bg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    font-weight: 500;
-  }
-
-  .avatar.me { background: var(--accent); color: #000; }
-  .avatar.partner { background: #8b5cf6; color: #fff; }
-
-  .partner-info {
-    flex: 1;
-  }
-
-  .partner-info strong {
-    display: block;
-    font-size: 0.85rem;
-  }
-
-  .partner-info span {
-    font-size: 0.75rem;
-    color: var(--muted);
-  }
-
-  .peer-count {
-    font-size: 0.8rem;
-    color: var(--muted);
-    padding: 0.3rem 0.75rem;
-    background: var(--surface);
-    border-radius: 999px;
-    border: 1px solid var(--border);
-  }
-
-  .peer-count .n {
-    color: var(--accent);
-    font-weight: 600;
-  }
-
-  /* Footer */
   footer {
-    text-align: center;
-    padding: 2rem;
-    color: var(--muted);
-    font-size: 0.75rem;
-    border-top: 1px solid var(--border);
-    margin-top: 2rem;
+    position:relative; z-index:5;
+    text-align:center;
+    padding:1.5rem;
+    color:var(--muted);
+    font-size:.72rem;
+    border-top:1px solid var(--border);
   }
 </style>
 </head>
@@ -356,262 +270,309 @@
 
 <header>
   <div class="logo">Sync<span>Watch</span></div>
-  <div class="status-pill" id="statusPill">
-    <div class="status-dot"></div>
-    <span id="statusText">Desconectado</span>
+  <div class="status-pill" id="pill">
+    <div class="dot"></div>
+    <span id="pillTxt">Iniciando…</span>
   </div>
 </header>
 
-<div class="container">
+<div class="wrap">
 
-  <!-- URL input -->
-  <div class="setup-panel">
-    <div class="panel-label">🎬 Link do vídeo</div>
-    <div class="input-row">
-      <input type="text" id="videoUrl" placeholder="Cole aqui o link direto do vídeo (.mp4, .m3u8, stream direto...)"/>
-      <button onclick="loadVideo()">Carregar</button>
+  <div class="card">
+    <div class="label">🎬 Link direto do vídeo</div>
+    <div class="row">
+      <input id="vurl" type="text" placeholder="https://…  (.mp4, .m3u8, stream direto de site de filmes…)" />
+      <button onclick="loadAndBroadcast()">▶ Carregar</button>
     </div>
   </div>
 
-  <!-- Share link -->
-  <div class="setup-panel">
-    <div class="panel-label">🔗 Sala de sincronização</div>
-    <div style="font-size:0.85rem; color:var(--muted); margin-bottom:0.75rem;">
-      Compartilhe este link com a outra pessoa. Ambos precisam abrir <strong style="color:var(--text)">o mesmo link</strong>.
-    </div>
+  <div class="card">
+    <div class="label">🔗 Compartilhar sala</div>
+    <div id="log" class="log">Gerando sala P2P…</div>
     <div class="share-row">
-      <div class="share-url" id="shareUrl">Gerando sala...</div>
-      <button class="secondary copy-btn" onclick="copyLink()">Copiar</button>
-      <span class="copied-flash" id="copiedFlash">✓ Copiado!</span>
+      <div class="share-url" id="shareUrl">aguardando…</div>
+      <button class="ghost" onclick="copyLink()">Copiar link</button>
+      <span class="copied" id="copied">✓ Copiado!</span>
     </div>
   </div>
 
-  <!-- Video player -->
-  <div class="video-wrapper" id="videoWrapper">
-    <div class="video-placeholder" id="placeholder">
-      <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1">
-        <polygon points="5 3 19 12 5 21 5 3"/>
-      </svg>
-      <p>Cole um link de vídeo acima para começar</p>
+  <div class="vwrap">
+    <div class="placeholder" id="ph">
+      <div class="icon">▶</div>
+      <p>Cole um link de vídeo acima e clique em Carregar</p>
     </div>
-    <video id="player" controls style="display:none"></video>
-    <div class="sync-toast" id="syncToast">⚡ Sincronizando...</div>
+    <video id="vid" controls style="display:none"></video>
+    <div class="toast" id="toast"></div>
   </div>
 
-  <!-- Partner bar -->
-  <div class="partner-bar">
-    <div class="partner-avatars">
-      <div class="avatar me">V</div>
+  <div class="card">
+    <div class="peers-bar">
+      <div class="avatar-row" id="avatarRow">
+        <div class="av me" title="Você">V</div>
+      </div>
+      <div class="peers-info">
+        <strong id="peerTitle">Sala pronta</strong>
+        <small id="peerSub">Aguardando outra pessoa entrar…</small>
+      </div>
+      <div class="badge">Na sala: <span id="peerN">1</span></div>
     </div>
-    <div class="partner-info">
-      <strong>Sala ativa</strong>
-      <span id="partnerStatus">Aguardando outra pessoa entrar...</span>
-    </div>
-    <div class="peer-count">Conectados: <span class="n" id="peerCount">1</span></div>
   </div>
 
 </div>
 
-<footer>SyncWatch — sem servidor, sem cadastro. Sincronização P2P via Gun.js</footer>
+<footer>SyncWatch · WebRTC via PeerJS · conexão direta entre navegadores · sem servidor</footer>
 
 <script>
-// ─── Room ID from URL hash ────────────────────────────────────────────────
-function getRoomId() {
-  let hash = window.location.hash.slice(1);
-  if (!hash) {
-    hash = Math.random().toString(36).slice(2, 10);
-    window.history.replaceState(null, '', '#' + hash);
-  }
-  return hash;
+// ─── Room setup ──────────────────────────────────────────────
+function getRoom() {
+  let h = location.hash.slice(1);
+  if (!h) { h = Math.random().toString(36).slice(2,9); location.hash = h; }
+  return h;
 }
+const ROOM   = getRoom();
+const SLOT_A = 'sw-' + ROOM + '-a';
+const SLOT_B = 'sw-' + ROOM + '-b';
+const SHARE  = location.href;
+document.getElementById('shareUrl').textContent = SHARE;
 
-const ROOM_ID = getRoomId();
-const SHARE_URL = window.location.href;
-
-document.getElementById('shareUrl').textContent = SHARE_URL;
-
-function copyLink() {
-  navigator.clipboard.writeText(SHARE_URL).then(() => {
-    const flash = document.getElementById('copiedFlash');
-    flash.classList.add('show');
-    setTimeout(() => flash.classList.remove('show'), 2000);
-  });
-}
-
-// ─── Gun.js P2P sync ───────────────────────────────────────────────────────
-// Public relay peers — no setup needed
-const gun = Gun(['https://gun-manhattan.herokuapp.com/gun', 'https://gunjs.herokuapp.com/gun']);
-const room = gun.get('syncwatch-' + ROOM_ID);
-
-let ignoreEvents = false;
-let lastSyncTime = 0;
+// ─── State ───────────────────────────────────────────────────
+const vid = document.getElementById('vid');
+let peer, conn;
+let mySlot, theirSlot;
+let ignoring = false;
 let hls = null;
-let peersOnline = 1;
+let retryTimer = null;
 
-const player = document.getElementById('player');
-const statusPill = document.getElementById('statusPill');
-const statusText = document.getElementById('statusText');
-const peerCount = document.getElementById('peerCount');
-const partnerStatus = document.getElementById('partnerStatus');
-
-// ─── Heartbeat to count peers ─────────────────────────────────────────────
-const myId = Math.random().toString(36).slice(2, 8);
-
-function sendHeartbeat() {
-  room.get('peers').get(myId).put({ ts: Date.now(), id: myId });
+// ─── UI ──────────────────────────────────────────────────────
+function setPill(cls, txt) {
+  const p = document.getElementById('pill');
+  p.className = 'status-pill ' + cls;
+  document.getElementById('pillTxt').textContent = txt;
+}
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+function setLog(msg, cls='') {
+  const l = document.getElementById('log');
+  l.textContent = msg; l.className = 'log ' + cls;
+}
+function setConnected(yes) {
+  document.getElementById('peerN').textContent = yes ? 2 : 1;
+  document.getElementById('peerTitle').textContent  = yes ? '2 pessoas na sala — sincronizados!' : 'Sala pronta';
+  document.getElementById('peerSub').textContent    = yes ? 'Conexão WebRTC direta ativa ✓' : 'Aguardando outra pessoa entrar…';
+  const row = document.getElementById('avatarRow');
+  const ex  = row.querySelector('.p1');
+  if (yes && !ex) {
+    const av = document.createElement('div');
+    av.className='av p1'; av.title='Parceiro'; av.textContent='P';
+    row.appendChild(av);
+  } else if (!yes && ex) ex.remove();
+  if (yes) setPill('connected','Conectado ✓');
+  else     setPill('connecting','Aguardando…');
 }
 
-sendHeartbeat();
-setInterval(sendHeartbeat, 3000);
+// ─── PeerJS ──────────────────────────────────────────────────
+function initPeer(slot, fallbackSlot) {
+  setLog('Conectando ao servidor de sinalização…');
+  setPill('connecting','Conectando…');
 
-// Track peers
-const seenPeers = {};
-room.get('peers').map().on((data, id) => {
-  if (!data) return;
-  if (Date.now() - data.ts < 8000) {
-    seenPeers[id] = data.ts;
-  }
-  // Clean stale
-  for (const k in seenPeers) {
-    if (Date.now() - seenPeers[k] > 8000) delete seenPeers[k];
-  }
-  const count = Object.keys(seenPeers).length;
-  peerCount.textContent = count;
-  if (count >= 2) {
-    partnerStatus.textContent = count + ' pessoa(s) na sala — sincronizados!';
-    statusPill.classList.add('connected');
-    statusText.textContent = 'Sincronizado';
-  } else {
-    partnerStatus.textContent = 'Aguardando outra pessoa entrar...';
-    statusPill.classList.remove('connected');
-    statusText.textContent = 'Sozinho';
-  }
-});
-
-// ─── Sync: listen for remote state ───────────────────────────────────────
-room.get('state').on((data) => {
-  if (!data || !data.from || data.from === myId) return;
-  if (!player.src || player.src === '') return;
-
-  const now = Date.now();
-  ignoreEvents = true;
-
-  if (data.action === 'play') {
-    const drift = (now - data.ts) / 1000;
-    const targetTime = data.currentTime + drift;
-    if (Math.abs(player.currentTime - targetTime) > 1) {
-      player.currentTime = targetTime;
+  peer = new Peer(slot, {
+    host: '0.peerjs.com',
+    port: 443,
+    path: '/',
+    secure: true,
+    debug: 0,
+    config: {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
     }
-    player.play().catch(() => {});
-    showSyncToast('▶ Parceiro deu play');
-  } else if (data.action === 'pause') {
-    player.pause();
-    if (Math.abs(player.currentTime - data.currentTime) > 1) {
-      player.currentTime = data.currentTime;
-    }
-    showSyncToast('⏸ Parceiro pausou');
-  } else if (data.action === 'seek') {
-    player.currentTime = data.currentTime;
-    showSyncToast('⏩ Parceiro buscou');
-  } else if (data.action === 'load') {
-    if (data.url && data.url !== player.src) {
-      loadVideoUrl(data.url, false);
-      showSyncToast('🎬 Parceiro carregou vídeo');
-    }
-  }
+  });
 
-  setTimeout(() => { ignoreEvents = false; }, 500);
-});
+  peer.on('open', id => {
+    mySlot    = id;
+    theirSlot = (id === SLOT_A) ? SLOT_B : SLOT_A;
+    setLog('Sala pronta · ID: ' + id.slice(-8) + ' · aguardando parceiro…', 'ok');
+    setPill('connecting', 'Aguardando parceiro…');
+    // If we're slot B, we try to reach slot A (host)
+    if (id === SLOT_B) attemptConnect(SLOT_A);
+    // If we're slot A, also try slot B in case B joined earlier
+    else attemptConnect(SLOT_B);
+  });
 
-// ─── Broadcast local events ───────────────────────────────────────────────
-function broadcast(action, extra = {}) {
-  room.get('state').put({
-    action,
-    currentTime: player.currentTime,
-    ts: Date.now(),
-    from: myId,
-    ...extra
+  peer.on('connection', c => setupConn(c));
+
+  peer.on('error', err => {
+    if (err.type === 'unavailable-id' && fallbackSlot) {
+      // Slot A taken, try slot B
+      peer.destroy();
+      initPeer(fallbackSlot, null);
+      return;
+    }
+    if (err.type === 'peer-unavailable') {
+      // Partner not online yet — retry
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(() => attemptConnect(theirSlot), 4000);
+      return;
+    }
+    setLog('Erro PeerJS: ' + err.type, 'err');
+    setPill('error', 'Erro');
+  });
+
+  peer.on('disconnected', () => {
+    setLog('Servidor de sinalização desconectou. Reconectando…', 'err');
+    peer.reconnect();
   });
 }
 
-player.addEventListener('play', () => {
-  if (ignoreEvents) return;
-  broadcast('play');
-});
-
-player.addEventListener('pause', () => {
-  if (ignoreEvents) return;
-  broadcast('pause');
-});
-
-player.addEventListener('seeked', () => {
-  if (ignoreEvents) return;
-  const now = Date.now();
-  if (now - lastSyncTime < 300) return;
-  lastSyncTime = now;
-  broadcast('seek');
-});
-
-// ─── Load video ───────────────────────────────────────────────────────────
-function loadVideo() {
-  const url = document.getElementById('videoUrl').value.trim();
-  if (!url) return;
-  loadVideoUrl(url, true);
+function attemptConnect(target) {
+  if (conn && conn.open) return;
+  const c = peer.connect(target, { reliable:true, serialization:'json' });
+  setupConn(c);
 }
 
-function loadVideoUrl(url, broadcast_load) {
-  const videoEl = document.getElementById('player');
-  const placeholder = document.getElementById('placeholder');
+function setupConn(c) {
+  c.on('open', () => {
+    conn = c;
+    clearTimeout(retryTimer);
+    setConnected(true);
+    setLog('Conexão P2P direta estabelecida!', 'ok');
+    // Sync current state to new partner
+    const url = document.getElementById('vurl').value.trim();
+    if (url) {
+      setTimeout(() => {
+        send({ type:'load', url, currentTime: vid.currentTime, paused: vid.paused });
+      }, 400);
+    }
+  });
 
-  // Cleanup old HLS
+  c.on('data', onData);
+
+  c.on('close', () => {
+    conn = null;
+    setConnected(false);
+    setLog('Parceiro desconectou.', 'err');
+    // Re-listen for them to come back
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(() => attemptConnect(theirSlot), 3000);
+  });
+
+  c.on('error', e => setLog('Erro de dados: ' + e, 'err'));
+}
+
+// ─── Receive ─────────────────────────────────────────────────
+function onData(msg) {
+  if (!msg || !msg.type) return;
+  ignoring = true;
+
+  if (msg.type === 'load') {
+    if (msg.url && msg.url !== vid.src) {
+      loadVideo(msg.url);
+      document.getElementById('vurl').value = msg.url;
+      showToast('🎬 Parceiro carregou um vídeo');
+    }
+    setTimeout(() => {
+      if (typeof msg.currentTime === 'number') vid.currentTime = msg.currentTime;
+      if (!msg.paused) vid.play().catch(()=>{});
+      ignoring = false;
+    }, 900);
+    return;
+  }
+
+  if (msg.type === 'play') {
+    const drift  = (Date.now() - msg.ts) / 1000;
+    const target = msg.currentTime + drift;
+    if (Math.abs(vid.currentTime - target) > 1.5) vid.currentTime = target;
+    vid.play().catch(()=>{});
+    showToast('▶ Parceiro deu play');
+  } else if (msg.type === 'pause') {
+    vid.pause();
+    if (Math.abs(vid.currentTime - msg.currentTime) > 1) vid.currentTime = msg.currentTime;
+    showToast('⏸ Parceiro pausou');
+  } else if (msg.type === 'seek') {
+    vid.currentTime = msg.currentTime;
+    showToast('⏩ Parceiro avançou para ' + fmtTime(msg.currentTime));
+  }
+
+  setTimeout(() => { ignoring = false; }, 400);
+}
+
+function fmtTime(s) {
+  const m = Math.floor(s/60), sec = Math.floor(s%60);
+  return m + ':' + String(sec).padStart(2,'0');
+}
+
+// ─── Send ────────────────────────────────────────────────────
+function send(msg) {
+  if (conn && conn.open) conn.send(msg);
+}
+
+// ─── Player events ───────────────────────────────────────────
+vid.addEventListener('play',  () => {
+  if (ignoring) return;
+  send({ type:'play', currentTime: vid.currentTime, ts: Date.now() });
+});
+vid.addEventListener('pause', () => {
+  if (ignoring) return;
+  send({ type:'pause', currentTime: vid.currentTime });
+});
+let lastSeek = 0;
+vid.addEventListener('seeked', () => {
+  if (ignoring) return;
+  const now = Date.now();
+  if (now - lastSeek < 500) return;
+  lastSeek = now;
+  send({ type:'seek', currentTime: vid.currentTime });
+});
+
+// ─── Load video ──────────────────────────────────────────────
+function loadVideo(url) {
   if (hls) { hls.destroy(); hls = null; }
+  document.getElementById('ph').style.display = 'none';
+  vid.style.display = 'block';
 
-  placeholder.style.display = 'none';
-  videoEl.style.display = 'block';
-
-  if (url.includes('.m3u8') || url.includes('m3u8')) {
-    // HLS stream
+  if (/\.m3u8/i.test(url) || /m3u8/i.test(url)) {
     if (Hls.isSupported()) {
       hls = new Hls({ enableWorker: false });
       hls.loadSource(url);
-      hls.attachMedia(videoEl);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {});
-    } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
-      videoEl.src = url;
+      hls.attachMedia(vid);
+    } else if (vid.canPlayType('application/vnd.apple.mpegurl')) {
+      vid.src = url;
+    } else {
+      setLog('HLS não suportado neste navegador.', 'err');
     }
   } else {
-    videoEl.src = url;
-  }
-
-  document.getElementById('videoUrl').value = url;
-
-  if (broadcast_load) {
-    broadcast('load', { url });
+    vid.src = url;
   }
 }
 
-// ─── Sync toast ───────────────────────────────────────────────────────────
-let toastTimeout;
-function showSyncToast(msg) {
-  const toast = document.getElementById('syncToast');
-  toast.textContent = msg;
-  toast.classList.add('show');
-  clearTimeout(toastTimeout);
-  toastTimeout = setTimeout(() => toast.classList.remove('show'), 2000);
+function loadAndBroadcast() {
+  const url = document.getElementById('vurl').value.trim();
+  if (!url) return;
+  loadVideo(url);
+  send({ type:'load', url, currentTime: 0, paused: true });
 }
 
-// ─── Check if room already has a video loaded ────────────────────────────
-room.get('state').once((data) => {
-  if (data && data.url) {
-    loadVideoUrl(data.url, false);
-    document.getElementById('videoUrl').value = data.url;
-  }
+document.getElementById('vurl').addEventListener('keydown', e => {
+  if (e.key === 'Enter') loadAndBroadcast();
 });
 
-// Allow pressing Enter to load
-document.getElementById('videoUrl').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') loadVideo();
-});
+// ─── Copy link ───────────────────────────────────────────────
+function copyLink() {
+  navigator.clipboard.writeText(SHARE).then(() => {
+    const c = document.getElementById('copied');
+    c.classList.add('show');
+    setTimeout(() => c.classList.remove('show'), 2000);
+  });
+}
+
+// ─── Start ───────────────────────────────────────────────────
+initPeer(SLOT_A, SLOT_B);
 </script>
 </body>
 </html>
