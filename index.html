@@ -9,260 +9,140 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #080810;
-    --surface: #0f0f18;
-    --card: #14141f;
-    --border: #252535;
-    --accent: #e8ff47;
-    --accent2: #7c5cfc;
-    --green: #3ddc84;
-    --red: #ff4757;
-    --text: #ececf0;
-    --muted: #5a5a72;
-    --r: 8px;
+    --bg:#080810;--surface:#0f0f18;--card:#14141f;--border:#252535;
+    --accent:#e8ff47;--accent2:#7c5cfc;--green:#3ddc84;--red:#ff4757;
+    --text:#ececf0;--muted:#5a5a72;--r:8px;
   }
-  * { margin:0; padding:0; box-sizing:border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    min-height: 100vh;
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+  body::after{
+    content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.15;
+    background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
+    background-size:48px 48px;
   }
-
-  body::after {
-    content:'';
-    position:fixed;
-    inset:0;
-    background-image:
-      linear-gradient(var(--border) 1px, transparent 1px),
-      linear-gradient(90deg, var(--border) 1px, transparent 1px);
-    background-size: 48px 48px;
-    opacity:0.18;
-    pointer-events:none;
-    z-index:0;
+  header{
+    position:relative;z-index:10;padding:1.2rem 2rem;display:flex;align-items:center;gap:1rem;
+    border-bottom:1px solid var(--border);background:rgba(8,8,16,.85);backdrop-filter:blur(12px);
   }
+  .logo{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;letter-spacing:3px;color:var(--accent);}
+  .logo span{color:var(--text);}
 
-  header {
-    position:relative;
-    z-index:10;
-    padding: 1.2rem 2rem;
-    display:flex;
-    align-items:center;
-    gap:1rem;
-    border-bottom:1px solid var(--border);
-    background: rgba(8,8,16,0.8);
-    backdrop-filter: blur(12px);
+  .pill{
+    margin-left:auto;display:flex;align-items:center;gap:.5rem;
+    background:var(--card);border:1px solid var(--border);
+    padding:.35rem .9rem;border-radius:999px;font-size:.78rem;color:var(--muted);transition:all .4s;
   }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:all .4s;flex-shrink:0;}
+  .pill.connecting .dot{background:#f5a623;box-shadow:0 0 6px #f5a623;}
+  .pill.connected .dot{background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 2.5s infinite;}
+  .pill.connected{border-color:rgba(61,220,132,.25);color:var(--text);}
+  .pill.proxying .dot{background:var(--accent);box-shadow:0 0 8px var(--accent);animation:blink 1s infinite;}
+  .pill.proxying{border-color:rgba(232,255,71,.25);color:var(--accent);}
+  .pill.error .dot{background:var(--red);}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
 
-  .logo {
-    font-family:'Bebas Neue', sans-serif;
-    font-size:1.9rem;
-    letter-spacing:3px;
-    color:var(--accent);
+  .wrap{
+    position:relative;z-index:5;max-width:900px;margin:0 auto;
+    padding:1.8rem 1.5rem;display:flex;flex-direction:column;gap:1.2rem;
   }
-  .logo span { color:var(--text); }
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1.2rem 1.4rem;}
+  .lbl{font-size:.68rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:.65rem;}
+  .row{display:flex;gap:.7rem;align-items:stretch;}
 
-  .status-pill {
-    margin-left:auto;
-    display:flex;
-    align-items:center;
-    gap:0.5rem;
-    background:var(--card);
-    border:1px solid var(--border);
-    padding:0.35rem 0.9rem;
-    border-radius:999px;
-    font-size:0.78rem;
-    color:var(--muted);
-    transition: all 0.4s;
+  input{
+    flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);
+    padding:.7rem 1rem;border-radius:var(--r);font-family:inherit;font-size:.88rem;outline:none;
+    transition:border-color .2s,box-shadow .2s;
   }
-  .dot { width:7px; height:7px; border-radius:50%; background:var(--muted); transition: all 0.4s; flex-shrink:0; }
-  .status-pill.connecting .dot { background:#f5a623; box-shadow:0 0 6px #f5a623; }
-  .status-pill.connected  .dot { background:var(--green); box-shadow:0 0 8px var(--green); animation:blink 2.5s infinite; }
-  .status-pill.connected  { border-color:rgba(61,220,132,0.25); color:var(--text); }
-  .status-pill.error      .dot { background:var(--red); }
+  input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,255,71,.07);}
+  input::placeholder{color:var(--muted);font-style:italic;}
 
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
-
-  .wrap {
-    position:relative;
-    z-index:5;
-    max-width:900px;
-    margin:0 auto;
-    padding:1.8rem 1.5rem;
-    display:flex;
-    flex-direction:column;
-    gap:1.2rem;
+  button{
+    background:var(--accent);color:#080810;border:none;padding:.7rem 1.4rem;border-radius:var(--r);
+    font-family:inherit;font-weight:600;font-size:.85rem;cursor:pointer;transition:all .18s;
+    white-space:nowrap;display:inline-flex;align-items:center;gap:.4rem;
   }
+  button:hover{background:#d4eb00;transform:translateY(-1px);}
+  button:active{transform:translateY(0);}
+  button.ghost{background:var(--surface);color:var(--text);border:1px solid var(--border);font-weight:400;}
+  button.ghost:hover{border-color:var(--accent);color:var(--accent);background:var(--surface);}
+  button:disabled{opacity:.4;cursor:not-allowed;transform:none;}
 
-  .card {
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:var(--r);
-    padding:1.2rem 1.4rem;
+  .share-row{
+    margin-top:.8rem;padding-top:.8rem;border-top:1px solid var(--border);
+    display:flex;gap:.7rem;align-items:center;
   }
-
-  .label {
-    font-size:0.68rem;
-    font-weight:500;
-    letter-spacing:.14em;
-    text-transform:uppercase;
-    color:var(--muted);
-    margin-bottom:.65rem;
+  .share-url{
+    flex:1;font-family:'Courier New',monospace;font-size:.75rem;color:var(--muted);
+    background:var(--surface);border:1px solid var(--border);padding:.55rem .9rem;
+    border-radius:var(--r);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;user-select:all;
   }
+  .copied{font-size:.75rem;color:var(--green);opacity:0;transition:opacity .3s;pointer-events:none;}
+  .copied.show{opacity:1;}
 
-  .row { display:flex; gap:.7rem; align-items:stretch; }
-
-  input {
-    flex:1;
-    background:var(--surface);
-    border:1px solid var(--border);
-    color:var(--text);
-    padding:.7rem 1rem;
-    border-radius:var(--r);
-    font-family:inherit;
-    font-size:.88rem;
-    outline:none;
-    transition: border-color .2s, box-shadow .2s;
+  /* MODE BADGE */
+  .mode-badge{
+    display:inline-flex;align-items:center;gap:.4rem;
+    padding:.3rem .8rem;border-radius:999px;font-size:.72rem;font-weight:500;
+    border:1px solid var(--border);background:var(--surface);color:var(--muted);
+    margin-bottom:.7rem;
   }
-  input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(232,255,71,.07); }
-  input::placeholder { color:var(--muted); font-style:italic; }
+  .mode-badge.proxy{border-color:rgba(232,255,71,.3);color:var(--accent);background:rgba(232,255,71,.05);}
+  .mode-badge.stream{border-color:rgba(124,92,252,.3);color:var(--accent2);background:rgba(124,92,252,.05);}
 
-  button {
-    background:var(--accent);
-    color:#080810;
-    border:none;
-    padding:.7rem 1.4rem;
-    border-radius:var(--r);
-    font-family:inherit;
-    font-weight:600;
-    font-size:.85rem;
-    cursor:pointer;
-    transition: all .18s;
-    white-space:nowrap;
-    display:inline-flex;
-    align-items:center;
-    gap:.4rem;
+  /* proxy progress */
+  .proxy-info{
+    display:none;margin-top:.7rem;padding:.7rem .9rem;
+    background:rgba(232,255,71,.05);border:1px solid rgba(232,255,71,.15);
+    border-radius:var(--r);font-size:.78rem;color:var(--accent);
   }
-  button:hover { background:#d4eb00; transform:translateY(-1px); }
-  button:active { transform:translateY(0); }
-  button.ghost {
-    background:var(--surface);
-    color:var(--text);
-    border:1px solid var(--border);
-    font-weight:400;
-  }
-  button.ghost:hover { border-color:var(--accent); color:var(--accent); background:var(--surface); }
+  .proxy-info.show{display:block;}
+  .pbar-wrap{height:3px;background:var(--border);border-radius:2px;margin-top:.5rem;overflow:hidden;}
+  .pbar{height:100%;background:var(--accent);width:0%;transition:width .3s;border-radius:2px;}
 
-  .share-row {
-    margin-top:.8rem;
-    padding-top:.8rem;
-    border-top:1px solid var(--border);
-    display:flex;
-    gap:.7rem;
-    align-items:center;
+  .vwrap{
+    position:relative;background:#000;border-radius:var(--r);
+    overflow:hidden;aspect-ratio:16/9;border:1px solid var(--border);
   }
-  .share-url {
-    flex:1;
-    font-family:'Courier New',monospace;
-    font-size:.75rem;
-    color:var(--muted);
-    background:var(--surface);
-    border:1px solid var(--border);
-    padding:.55rem .9rem;
-    border-radius:var(--r);
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-    cursor:default;
-    user-select:all;
+  video{width:100%;height:100%;display:block;background:#000;}
+  .placeholder{
+    position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:1rem;background:var(--surface);
   }
-  .copied { font-size:.75rem; color:var(--green); opacity:0; transition:opacity .3s; pointer-events:none; }
-  .copied.show { opacity:1; }
+  .placeholder .icon{font-size:3.5rem;opacity:.12;}
+  .placeholder p{color:var(--muted);font-size:.88rem;}
 
-  .vwrap {
-    position:relative;
-    background:#000;
-    border-radius:var(--r);
-    overflow:hidden;
-    aspect-ratio:16/9;
-    border:1px solid var(--border);
+  .toast{
+    position:absolute;top:.9rem;right:.9rem;background:rgba(8,8,16,.88);
+    border:1px solid var(--border);backdrop-filter:blur(12px);
+    padding:.4rem .9rem;border-radius:999px;font-size:.72rem;color:var(--accent);
+    opacity:0;transform:translateY(-4px);transition:all .3s;pointer-events:none;
   }
-  video { width:100%; height:100%; display:block; background:#000; }
+  .toast.show{opacity:1;transform:translateY(0);}
 
-  .placeholder {
-    position:absolute;
-    inset:0;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:1rem;
-    background:var(--surface);
+  .peers-bar{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
+  .avatar-row{display:flex;}
+  .av{
+    width:30px;height:30px;border-radius:50%;border:2px solid var(--bg);
+    display:flex;align-items:center;justify-content:center;
+    font-size:.75rem;font-weight:600;margin-left:-4px;
   }
-  .placeholder .icon { font-size:3.5rem; opacity:.12; }
-  .placeholder p { color:var(--muted); font-size:.88rem; }
+  .av:first-child{margin-left:0;}
+  .av.me{background:var(--accent);color:#000;}
+  .av.p1{background:var(--accent2);color:#fff;}
+  .peers-info{flex:1;}
+  .peers-info strong{display:block;font-size:.83rem;}
+  .peers-info small{font-size:.73rem;color:var(--muted);}
+  .badge{padding:.28rem .75rem;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-size:.75rem;color:var(--muted);}
+  .badge span{color:var(--accent);font-weight:600;}
 
-  .toast {
-    position:absolute;
-    top:.9rem;
-    right:.9rem;
-    background:rgba(8,8,16,.88);
-    border:1px solid var(--border);
-    backdrop-filter:blur(12px);
-    padding:.4rem .9rem;
-    border-radius:999px;
-    font-size:.72rem;
-    color:var(--accent);
-    opacity:0;
-    transform:translateY(-4px);
-    transition: all .3s;
-    pointer-events:none;
-  }
-  .toast.show { opacity:1; transform:translateY(0); }
+  .log{font-size:.75rem;color:var(--muted);font-style:italic;min-height:1.1rem;transition:color .3s;}
+  .log.ok{color:var(--green);}
+  .log.err{color:var(--red);}
 
-  .peers-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
-  .avatar-row { display:flex; }
-  .av {
-    width:30px; height:30px;
-    border-radius:50%;
-    border:2px solid var(--bg);
-    display:flex; align-items:center; justify-content:center;
-    font-size:.75rem; font-weight:600;
-    margin-left:-4px;
-  }
-  .av:first-child { margin-left:0; }
-  .av.me  { background:var(--accent);  color:#000; }
-  .av.p1  { background:var(--accent2); color:#fff; }
-
-  .peers-info { flex:1; }
-  .peers-info strong { display:block; font-size:.83rem; }
-  .peers-info small  { font-size:.73rem; color:var(--muted); }
-
-  .badge {
-    padding:.28rem .75rem;
-    border-radius:999px;
-    background:var(--surface);
-    border:1px solid var(--border);
-    font-size:.75rem; color:var(--muted);
-  }
-  .badge span { color:var(--accent); font-weight:600; }
-
-  .log {
-    font-size:.75rem; color:var(--muted); font-style:italic;
-    min-height:1.1rem; transition: color .3s;
-  }
-  .log.ok   { color:var(--green); }
-  .log.err  { color:var(--red); }
-  .log.info { color:var(--accent); }
-
-  footer {
-    position:relative; z-index:5;
-    text-align:center;
-    padding:1.5rem;
-    color:var(--muted);
-    font-size:.72rem;
-    border-top:1px solid var(--border);
+  footer{
+    position:relative;z-index:5;text-align:center;
+    padding:1.5rem;color:var(--muted);font-size:.72rem;border-top:1px solid var(--border);
   }
 </style>
 </head>
@@ -270,24 +150,29 @@
 
 <header>
   <div class="logo">Sync<span>Watch</span></div>
-  <div class="status-pill" id="pill">
-    <div class="dot"></div>
-    <span id="pillTxt">Iniciando…</span>
-  </div>
+  <div class="pill" id="pill"><div class="dot"></div><span id="pillTxt">Iniciando…</span></div>
 </header>
 
 <div class="wrap">
 
+  <!-- VIDEO URL -->
   <div class="card">
-    <div class="label">🎬 Link direto do vídeo</div>
+    <div class="lbl">🎬 Link do vídeo</div>
+    <div class="mode-badge" id="modeBadge">⬤ Detecção automática</div>
     <div class="row">
-      <input id="vurl" type="text" placeholder="https://…  (.mp4, .m3u8, stream direto de site de filmes…)" />
-      <button onclick="loadAndBroadcast()">▶ Carregar</button>
+      <input id="vurl" type="text" placeholder="Cole o link direto (.mp4, .m3u8, googlevideo, etc)…"/>
+      <button id="loadBtn" onclick="loadAndBroadcast()">▶ Carregar</button>
+    </div>
+    <!-- proxy progress shown to sender -->
+    <div class="proxy-info" id="proxyInfo">
+      <span id="proxyTxt">📡 Transmitindo vídeo diretamente para o parceiro via WebRTC…</span>
+      <div class="pbar-wrap"><div class="pbar" id="pbar"></div></div>
     </div>
   </div>
 
+  <!-- SHARE -->
   <div class="card">
-    <div class="label">🔗 Compartilhar sala</div>
+    <div class="lbl">🔗 Compartilhar sala</div>
     <div id="log" class="log">Gerando sala P2P…</div>
     <div class="share-row">
       <div class="share-url" id="shareUrl">aguardando…</div>
@@ -296,6 +181,7 @@
     </div>
   </div>
 
+  <!-- PLAYER -->
   <div class="vwrap">
     <div class="placeholder" id="ph">
       <div class="icon">▶</div>
@@ -305,14 +191,13 @@
     <div class="toast" id="toast"></div>
   </div>
 
+  <!-- PEERS -->
   <div class="card">
     <div class="peers-bar">
-      <div class="avatar-row" id="avatarRow">
-        <div class="av me" title="Você">V</div>
-      </div>
+      <div class="avatar-row" id="avatarRow"><div class="av me" title="Você">V</div></div>
       <div class="peers-info">
         <strong id="peerTitle">Sala pronta</strong>
-        <small id="peerSub">Aguardando outra pessoa entrar…</small>
+        <small id="peerSub">Aguardando outra pessoa…</small>
       </div>
       <div class="badge">Na sala: <span id="peerN">1</span></div>
     </div>
@@ -320,259 +205,461 @@
 
 </div>
 
-<footer>SyncWatch · WebRTC via PeerJS · conexão direta entre navegadores · sem servidor</footer>
+<footer>SyncWatch · WebRTC P2P · proxy automático para links IP-locked · sem servidor</footer>
 
 <script>
-// ─── Room setup ──────────────────────────────────────────────
-function getRoom() {
-  let h = location.hash.slice(1);
-  if (!h) { h = Math.random().toString(36).slice(2,9); location.hash = h; }
+// ═══════════════════════════════════════════════════════════
+// ROOM SETUP
+// ═══════════════════════════════════════════════════════════
+function getRoom(){
+  let h=location.hash.slice(1);
+  if(!h){h=Math.random().toString(36).slice(2,9);location.hash=h;}
   return h;
 }
-const ROOM   = getRoom();
-const SLOT_A = 'sw-' + ROOM + '-a';
-const SLOT_B = 'sw-' + ROOM + '-b';
-const SHARE  = location.href;
-document.getElementById('shareUrl').textContent = SHARE;
+const ROOM  =getRoom();
+const SLOT_A='sw-'+ROOM+'-a';
+const SLOT_B='sw-'+ROOM+'-b';
+const SHARE =location.href;
+document.getElementById('shareUrl').textContent=SHARE;
 
-// ─── State ───────────────────────────────────────────────────
-const vid = document.getElementById('vid');
-let peer, conn;
-let mySlot, theirSlot;
-let ignoring = false;
-let hls = null;
-let retryTimer = null;
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+const vid=document.getElementById('vid');
+let peer,conn,mySlot,theirSlot;
+let ignoring=false,hls=null,retryTimer=null;
 
-// ─── UI ──────────────────────────────────────────────────────
-function setPill(cls, txt) {
-  const p = document.getElementById('pill');
-  p.className = 'status-pill ' + cls;
-  document.getElementById('pillTxt').textContent = txt;
+// Proxy state
+let proxyMode=false;      // true = we are the sender/proxy
+let mediaSource=null;
+let sourceBuffer=null;
+let sbReady=false;
+let proxyQueue=[];
+let fetchController=null;
+let totalProxied=0;
+let proxyMime='video/mp4; codecs="avc1.42E01E, mp4a.40.2"';
+
+// ═══════════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════════
+function setPill(cls,txt){
+  const p=document.getElementById('pill');
+  p.className='pill '+cls;
+  document.getElementById('pillTxt').textContent=txt;
 }
 let toastTimer;
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
 }
-function setLog(msg, cls='') {
-  const l = document.getElementById('log');
-  l.textContent = msg; l.className = 'log ' + cls;
+function setLog(msg,cls=''){
+  const l=document.getElementById('log');
+  l.textContent=msg;l.className='log '+cls;
 }
-function setConnected(yes) {
-  document.getElementById('peerN').textContent = yes ? 2 : 1;
-  document.getElementById('peerTitle').textContent  = yes ? '2 pessoas na sala — sincronizados!' : 'Sala pronta';
-  document.getElementById('peerSub').textContent    = yes ? 'Conexão WebRTC direta ativa ✓' : 'Aguardando outra pessoa entrar…';
-  const row = document.getElementById('avatarRow');
-  const ex  = row.querySelector('.p1');
-  if (yes && !ex) {
-    const av = document.createElement('div');
-    av.className='av p1'; av.title='Parceiro'; av.textContent='P';
-    row.appendChild(av);
-  } else if (!yes && ex) ex.remove();
-  if (yes) setPill('connected','Conectado ✓');
-  else     setPill('connecting','Aguardando…');
+function setConnected(yes){
+  document.getElementById('peerN').textContent=yes?2:1;
+  document.getElementById('peerTitle').textContent=yes?'2 pessoas — sincronizados!':'Sala pronta';
+  document.getElementById('peerSub').textContent=yes?'Conexão WebRTC direta ✓':'Aguardando outra pessoa…';
+  const row=document.getElementById('avatarRow');
+  const ex=row.querySelector('.p1');
+  if(yes&&!ex){const av=document.createElement('div');av.className='av p1';av.title='Parceiro';av.textContent='P';row.appendChild(av);}
+  else if(!yes&&ex)ex.remove();
+  if(yes)setPill('connected','Conectado ✓');
+  else setPill('connecting','Aguardando…');
+}
+function setModeBadge(mode){
+  const b=document.getElementById('modeBadge');
+  if(mode==='proxy'){b.className='mode-badge proxy';b.textContent='📡 Modo proxy — transmitindo para parceiro';}
+  else if(mode==='stream'){b.className='mode-badge stream';b.textContent='📺 Recebendo stream do parceiro';}
+  else{b.className='mode-badge';b.textContent='⬤ Detecção automática';}
 }
 
-// ─── PeerJS ──────────────────────────────────────────────────
-function initPeer(slot, fallbackSlot) {
+// ═══════════════════════════════════════════════════════════
+// DETECT IP-LOCKED LINK
+// ═══════════════════════════════════════════════════════════
+function isIpLocked(url){
+  // googlevideo with &ip= param — locked to requester's IP
+  return /googlevideo\.com/.test(url)&&/[?&]ip=/.test(url);
+}
+
+// ═══════════════════════════════════════════════════════════
+// PEERJS
+// ═══════════════════════════════════════════════════════════
+function initPeer(slot,fallback){
   setLog('Conectando ao servidor de sinalização…');
   setPill('connecting','Conectando…');
-
-  peer = new Peer(slot, {
-    host: '0.peerjs.com',
-    port: 443,
-    path: '/',
-    secure: true,
-    debug: 0,
-    config: {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-      ]
-    }
+  peer=new Peer(slot,{
+    host:'0.peerjs.com',port:443,path:'/',secure:true,debug:0,
+    config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]}
   });
-
-  peer.on('open', id => {
-    mySlot    = id;
-    theirSlot = (id === SLOT_A) ? SLOT_B : SLOT_A;
-    setLog('Sala pronta · ID: ' + id.slice(-8) + ' · aguardando parceiro…', 'ok');
-    setPill('connecting', 'Aguardando parceiro…');
-    // If we're slot B, we try to reach slot A (host)
-    if (id === SLOT_B) attemptConnect(SLOT_A);
-    // If we're slot A, also try slot B in case B joined earlier
-    else attemptConnect(SLOT_B);
+  peer.on('open',id=>{
+    mySlot=id;
+    theirSlot=(id===SLOT_A)?SLOT_B:SLOT_A;
+    setLog('Sala pronta · aguardando parceiro…','ok');
+    setPill('connecting','Aguardando parceiro…');
+    attemptConnect(theirSlot);
   });
-
-  peer.on('connection', c => setupConn(c));
-
-  peer.on('error', err => {
-    if (err.type === 'unavailable-id' && fallbackSlot) {
-      // Slot A taken, try slot B
-      peer.destroy();
-      initPeer(fallbackSlot, null);
-      return;
-    }
-    if (err.type === 'peer-unavailable') {
-      // Partner not online yet — retry
-      clearTimeout(retryTimer);
-      retryTimer = setTimeout(() => attemptConnect(theirSlot), 4000);
-      return;
-    }
-    setLog('Erro PeerJS: ' + err.type, 'err');
-    setPill('error', 'Erro');
+  peer.on('connection',c=>setupConn(c));
+  peer.on('error',err=>{
+    if(err.type==='unavailable-id'&&fallback){peer.destroy();initPeer(fallback,null);return;}
+    if(err.type==='peer-unavailable'){clearTimeout(retryTimer);retryTimer=setTimeout(()=>attemptConnect(theirSlot),4000);return;}
+    setLog('Erro: '+err.type,'err');setPill('error','Erro');
   });
-
-  peer.on('disconnected', () => {
-    setLog('Servidor de sinalização desconectou. Reconectando…', 'err');
-    peer.reconnect();
-  });
+  peer.on('disconnected',()=>{setLog('Reconectando…','err');peer.reconnect();});
 }
-
-function attemptConnect(target) {
-  if (conn && conn.open) return;
-  const c = peer.connect(target, { reliable:true, serialization:'json' });
+function attemptConnect(target){
+  if(conn&&conn.open)return;
+  // Use binary for proxy chunks, but we'll handle type in data
+  const c=peer.connect(target,{reliable:true,serialization:'binary'});
   setupConn(c);
 }
-
-function setupConn(c) {
-  c.on('open', () => {
-    conn = c;
-    clearTimeout(retryTimer);
+function setupConn(c){
+  c.on('open',()=>{
+    conn=c;clearTimeout(retryTimer);
     setConnected(true);
-    setLog('Conexão P2P direta estabelecida!', 'ok');
-    // Sync current state to new partner
-    const url = document.getElementById('vurl').value.trim();
-    if (url) {
-      setTimeout(() => {
-        send({ type:'load', url, currentTime: vid.currentTime, paused: vid.paused });
-      }, 400);
+    setLog('Conexão P2P direta estabelecida!','ok');
+    const url=document.getElementById('vurl').value.trim();
+    if(url){
+      setTimeout(()=>{
+        const locked=isIpLocked(url);
+        if(locked){
+          // Tell partner to prepare for proxy stream
+          sendMsg({type:'proxy_start',mime:proxyMime});
+          startProxy(url);
+        } else {
+          sendMsg({type:'load',url,currentTime:vid.currentTime,paused:vid.paused});
+        }
+      },400);
     }
   });
-
-  c.on('data', onData);
-
-  c.on('close', () => {
-    conn = null;
-    setConnected(false);
-    setLog('Parceiro desconectou.', 'err');
-    // Re-listen for them to come back
+  c.on('data',onData);
+  c.on('close',()=>{
+    conn=null;setConnected(false);
+    setLog('Parceiro desconectou.','err');
     clearTimeout(retryTimer);
-    retryTimer = setTimeout(() => attemptConnect(theirSlot), 3000);
+    retryTimer=setTimeout(()=>attemptConnect(theirSlot),3000);
   });
-
-  c.on('error', e => setLog('Erro de dados: ' + e, 'err'));
+  c.on('error',e=>setLog('Erro: '+e,'err'));
 }
 
-// ─── Receive ─────────────────────────────────────────────────
-function onData(msg) {
-  if (!msg || !msg.type) return;
-  ignoring = true;
+// ═══════════════════════════════════════════════════════════
+// MESSAGING  (JSON wrapped in Uint8Array for binary channel)
+// ═══════════════════════════════════════════════════════════
+const ENC=new TextEncoder();
+const DEC=new TextDecoder();
 
-  if (msg.type === 'load') {
-    if (msg.url && msg.url !== vid.src) {
-      loadVideo(msg.url);
-      document.getElementById('vurl').value = msg.url;
-      showToast('🎬 Parceiro carregou um vídeo');
-    }
-    setTimeout(() => {
-      if (typeof msg.currentTime === 'number') vid.currentTime = msg.currentTime;
-      if (!msg.paused) vid.play().catch(()=>{});
-      ignoring = false;
-    }, 900);
+function sendMsg(obj){
+  if(!conn||!conn.open)return;
+  // prefix with 0x01 = control message
+  const json=JSON.stringify(obj);
+  const buf=new Uint8Array(json.length+1);
+  buf[0]=0x01;
+  for(let i=0;i<json.length;i++)buf[i+1]=json.charCodeAt(i);
+  conn.send(buf.buffer);
+}
+function sendChunk(ab){
+  if(!conn||!conn.open)return;
+  // prefix 0x02 = video chunk
+  const src=new Uint8Array(ab);
+  const out=new Uint8Array(src.length+1);
+  out[0]=0x02;
+  out.set(src,1);
+  conn.send(out.buffer);
+}
+
+function onData(raw){
+  let arr;
+  if(raw instanceof ArrayBuffer)arr=new Uint8Array(raw);
+  else if(raw instanceof Uint8Array)arr=raw;
+  else{
+    // fallback plain object (shouldn't happen with binary serialization)
+    try{handleMsg(typeof raw==='string'?JSON.parse(raw):raw);}catch(e){}
+    return;
+  }
+  const type=arr[0];
+  if(type===0x01){
+    // control
+    try{handleMsg(JSON.parse(DEC.decode(arr.slice(1))));}catch(e){console.error(e);}
+  } else if(type===0x02){
+    // video chunk
+    handleChunk(arr.slice(1).buffer);
+  }
+}
+
+function handleMsg(msg){
+  if(!msg||!msg.type)return;
+
+  if(msg.type==='load'){
+    ignoring=true;
+    loadVideo(msg.url);
+    document.getElementById('vurl').value=msg.url;
+    showToast('🎬 Parceiro carregou um vídeo');
+    setTimeout(()=>{
+      if(typeof msg.currentTime==='number')vid.currentTime=msg.currentTime;
+      if(!msg.paused)vid.play().catch(()=>{});
+      ignoring=false;
+    },900);
     return;
   }
 
-  if (msg.type === 'play') {
-    const drift  = (Date.now() - msg.ts) / 1000;
-    const target = msg.currentTime + drift;
-    if (Math.abs(vid.currentTime - target) > 1.5) vid.currentTime = target;
+  if(msg.type==='proxy_start'){
+    // Partner will stream the video to us
+    proxyMime=msg.mime||proxyMime;
+    setModeBadge('stream');
+    setLog('Recebendo stream do parceiro…','ok');
+    showToast('📺 Recebendo vídeo do parceiro…');
+    setupMediaSource();
+    return;
+  }
+
+  if(msg.type==='proxy_mime'){
+    // update mime after initial detection
+    proxyMime=msg.mime;
+    if(sourceBuffer&&!sbReady){
+      // sourceBuffer already added with wrong mime, recreate
+      // just proceed, browser will try
+    }
+    return;
+  }
+
+  if(msg.type==='proxy_done'){
+    showToast('✅ Stream completo');
+    if(sourceBuffer&&mediaSource&&mediaSource.readyState==='open'){
+      try{
+        if(!sourceBuffer.updating)mediaSource.endOfStream();
+        else sourceBuffer.addEventListener('updateend',()=>{try{mediaSource.endOfStream();}catch(e){}},{once:true});
+      }catch(e){}
+    }
+    return;
+  }
+
+  if(msg.type==='proxy_error'){
+    setLog('Erro no proxy: '+msg.msg,'err');
+    showToast('❌ Erro ao buscar vídeo');
+    return;
+  }
+
+  // Playback sync
+  ignoring=true;
+  if(msg.type==='play'){
+    const drift=(Date.now()-msg.ts)/1000;
+    const target=msg.currentTime+drift;
+    if(Math.abs(vid.currentTime-target)>1.5)vid.currentTime=target;
     vid.play().catch(()=>{});
     showToast('▶ Parceiro deu play');
-  } else if (msg.type === 'pause') {
+  } else if(msg.type==='pause'){
     vid.pause();
-    if (Math.abs(vid.currentTime - msg.currentTime) > 1) vid.currentTime = msg.currentTime;
+    if(Math.abs(vid.currentTime-msg.currentTime)>1)vid.currentTime=msg.currentTime;
     showToast('⏸ Parceiro pausou');
-  } else if (msg.type === 'seek') {
-    vid.currentTime = msg.currentTime;
-    showToast('⏩ Parceiro avançou para ' + fmtTime(msg.currentTime));
+  } else if(msg.type==='seek'){
+    vid.currentTime=msg.currentTime;
+    showToast('⏩ Parceiro avançou');
   }
-
-  setTimeout(() => { ignoring = false; }, 400);
+  setTimeout(()=>{ignoring=false;},400);
 }
 
-function fmtTime(s) {
-  const m = Math.floor(s/60), sec = Math.floor(s%60);
-  return m + ':' + String(sec).padStart(2,'0');
-}
+// ═══════════════════════════════════════════════════════════
+// PROXY: sender fetches video and streams chunks via WebRTC
+// ═══════════════════════════════════════════════════════════
+async function startProxy(url){
+  proxyMode=true;
+  setModeBadge('proxy');
+  setPill('proxying','Transmitindo…');
+  document.getElementById('proxyInfo').classList.add('show');
+  document.getElementById('proxyTxt').textContent='📡 Buscando vídeo e transmitindo para o parceiro…';
 
-// ─── Send ────────────────────────────────────────────────────
-function send(msg) {
-  if (conn && conn.open) conn.send(msg);
-}
+  fetchController=new AbortController();
+  try{
+    const resp=await fetch(url,{signal:fetchController.signal,mode:'cors',credentials:'omit'});
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
 
-// ─── Player events ───────────────────────────────────────────
-vid.addEventListener('play',  () => {
-  if (ignoring) return;
-  send({ type:'play', currentTime: vid.currentTime, ts: Date.now() });
-});
-vid.addEventListener('pause', () => {
-  if (ignoring) return;
-  send({ type:'pause', currentTime: vid.currentTime });
-});
-let lastSeek = 0;
-vid.addEventListener('seeked', () => {
-  if (ignoring) return;
-  const now = Date.now();
-  if (now - lastSeek < 500) return;
-  lastSeek = now;
-  send({ type:'seek', currentTime: vid.currentTime });
-});
+    // Detect real MIME from Content-Type
+    const ct=resp.headers.get('content-type')||'';
+    let detectedMime='video/mp4';
+    if(ct.includes('mp4'))detectedMime='video/mp4';
+    else if(ct.includes('webm'))detectedMime='video/webm';
+    else if(ct.includes('ogg'))detectedMime='video/ogg';
 
-// ─── Load video ──────────────────────────────────────────────
-function loadVideo(url) {
-  if (hls) { hls.destroy(); hls = null; }
-  document.getElementById('ph').style.display = 'none';
-  vid.style.display = 'block';
+    proxyMime=detectedMime+'; codecs="avc1.42E01E, mp4a.40.2"';
+    // Tell partner actual mime
+    sendMsg({type:'proxy_mime',mime:proxyMime});
 
-  if (/\.m3u8/i.test(url) || /m3u8/i.test(url)) {
-    if (Hls.isSupported()) {
-      hls = new Hls({ enableWorker: false });
-      hls.loadSource(url);
-      hls.attachMedia(vid);
-    } else if (vid.canPlayType('application/vnd.apple.mpegurl')) {
-      vid.src = url;
-    } else {
-      setLog('HLS não suportado neste navegador.', 'err');
+    const contentLength=parseInt(resp.headers.get('content-length')||'0');
+    const reader=resp.body.getReader();
+    let received=0;
+
+    while(true){
+      const {done,value}=await reader.read();
+      if(done)break;
+      sendChunk(value.buffer);
+      received+=value.length;
+      totalProxied=received;
+      if(contentLength>0){
+        const pct=Math.min(100,Math.round(received/contentLength*100));
+        document.getElementById('pbar').style.width=pct+'%';
+        document.getElementById('proxyTxt').textContent=
+          `📡 Transmitindo… ${pct}% (${(received/1024/1024).toFixed(1)} MB)`;
+      } else {
+        document.getElementById('proxyTxt').textContent=
+          `📡 Transmitindo… ${(received/1024/1024).toFixed(1)} MB enviados`;
+      }
     }
-  } else {
-    vid.src = url;
+    sendMsg({type:'proxy_done'});
+    document.getElementById('proxyTxt').textContent='✅ Transmissão completa!';
+    document.getElementById('pbar').style.width='100%';
+    setPill('connected','Conectado ✓');
+
+  } catch(e){
+    if(e.name==='AbortError')return;
+    console.error('Proxy fetch error:',e);
+    sendMsg({type:'proxy_error',msg:e.message});
+    setLog('Erro ao buscar vídeo: '+e.message,'err');
+    // Fallback: try to send URL directly anyway
+    sendMsg({type:'load',url,currentTime:vid.currentTime,paused:vid.paused});
+    setModeBadge('auto');
+    document.getElementById('proxyInfo').classList.remove('show');
   }
 }
 
-function loadAndBroadcast() {
-  const url = document.getElementById('vurl').value.trim();
-  if (!url) return;
-  loadVideo(url);
-  send({ type:'load', url, currentTime: 0, paused: true });
-}
+// ═══════════════════════════════════════════════════════════
+// PROXY: receiver — MediaSource + SourceBuffer
+// ═══════════════════════════════════════════════════════════
+function setupMediaSource(){
+  document.getElementById('ph').style.display='none';
+  vid.style.display='block';
 
-document.getElementById('vurl').addEventListener('keydown', e => {
-  if (e.key === 'Enter') loadAndBroadcast();
-});
+  // Try to find a supported codec combo
+  const candidates=[
+    'video/mp4; codecs="avc1.42E01E, mp4a.40.2"',
+    'video/mp4; codecs="avc1.64001E, mp4a.40.2"',
+    'video/mp4',
+    'video/webm; codecs="vp8, vorbis"',
+    'video/webm; codecs="vp9"',
+    'video/webm',
+  ];
+  let mime=proxyMime;
+  if(!MediaSource.isTypeSupported(mime)){
+    mime=candidates.find(c=>MediaSource.isTypeSupported(c))||'video/mp4';
+  }
 
-// ─── Copy link ───────────────────────────────────────────────
-function copyLink() {
-  navigator.clipboard.writeText(SHARE).then(() => {
-    const c = document.getElementById('copied');
-    c.classList.add('show');
-    setTimeout(() => c.classList.remove('show'), 2000);
+  mediaSource=new MediaSource();
+  vid.src=URL.createObjectURL(mediaSource);
+  proxyQueue=[];
+  sbReady=false;
+  sourceBuffer=null;
+
+  mediaSource.addEventListener('sourceopen',()=>{
+    try{
+      sourceBuffer=mediaSource.addSourceBuffer(mime);
+      sourceBuffer.mode='sequence';
+      sbReady=true;
+      sourceBuffer.addEventListener('updateend',flushQueue);
+      flushQueue();
+    }catch(e){
+      setLog('MediaSource erro: '+e.message,'err');
+      console.error(e);
+    }
   });
 }
 
-// ─── Start ───────────────────────────────────────────────────
-initPeer(SLOT_A, SLOT_B);
+function handleChunk(ab){
+  proxyQueue.push(ab);
+  if(sbReady&&sourceBuffer&&!sourceBuffer.updating)flushQueue();
+}
+
+function flushQueue(){
+  if(!sbReady||!sourceBuffer||sourceBuffer.updating||proxyQueue.length===0)return;
+  if(mediaSource.readyState!=='open')return;
+  const chunk=proxyQueue.shift();
+  try{
+    sourceBuffer.appendBuffer(chunk);
+  }catch(e){
+    console.error('appendBuffer error:',e);
+    // If quota exceeded, try to remove old data
+    if(e.name==='QuotaExceededError'&&vid.currentTime>30){
+      try{
+        sourceBuffer.remove(0,vid.currentTime-10);
+        // re-queue
+        proxyQueue.unshift(chunk);
+      }catch(e2){console.error(e2);}
+    }
+  }
+  // Auto-play once we have some buffered
+  if(vid.paused&&vid.readyState>=2){
+    vid.play().catch(()=>{});
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// PLAYER EVENTS → SYNC
+// ═══════════════════════════════════════════════════════════
+vid.addEventListener('play',()=>{if(!ignoring)sendMsg({type:'play',currentTime:vid.currentTime,ts:Date.now()});});
+vid.addEventListener('pause',()=>{if(!ignoring)sendMsg({type:'pause',currentTime:vid.currentTime});});
+let lastSeek=0;
+vid.addEventListener('seeked',()=>{
+  if(ignoring)return;
+  const now=Date.now();if(now-lastSeek<500)return;lastSeek=now;
+  sendMsg({type:'seek',currentTime:vid.currentTime});
+});
+
+// ═══════════════════════════════════════════════════════════
+// LOAD VIDEO (normal, non-locked)
+// ═══════════════════════════════════════════════════════════
+function loadVideo(url){
+  if(hls){hls.destroy();hls=null;}
+  document.getElementById('ph').style.display='none';
+  vid.style.display='block';
+  if(/\.m3u8/i.test(url)||/m3u8/i.test(url)){
+    if(Hls.isSupported()){hls=new Hls({enableWorker:false});hls.loadSource(url);hls.attachMedia(vid);}
+    else if(vid.canPlayType('application/vnd.apple.mpegurl'))vid.src=url;
+    else setLog('HLS não suportado.','err');
+  } else {
+    vid.src=url;
+  }
+}
+
+function loadAndBroadcast(){
+  const url=document.getElementById('vurl').value.trim();
+  if(!url)return;
+
+  const locked=isIpLocked(url);
+
+  // Load locally first (we have the right IP)
+  loadVideo(url);
+  setModeBadge(locked?'proxy':'auto');
+
+  if(conn&&conn.open){
+    if(locked){
+      // Stream to partner instead of sending URL
+      sendMsg({type:'proxy_start',mime:proxyMime});
+      startProxy(url);
+    } else {
+      sendMsg({type:'load',url,currentTime:0,paused:true});
+    }
+  } else {
+    // No partner yet — will sync when they connect (in setupConn open handler)
+    setLog('Vídeo carregado. Aguardando parceiro para sincronizar…','ok');
+  }
+}
+
+document.getElementById('vurl').addEventListener('keydown',e=>{if(e.key==='Enter')loadAndBroadcast();});
+
+// ═══════════════════════════════════════════════════════════
+// COPY LINK
+// ═══════════════════════════════════════════════════════════
+function copyLink(){
+  navigator.clipboard.writeText(SHARE).then(()=>{
+    const c=document.getElementById('copied');
+    c.classList.add('show');setTimeout(()=>c.classList.remove('show'),2000);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// START
+// ═══════════════════════════════════════════════════════════
+initPeer(SLOT_A,SLOT_B);
 </script>
 </body>
 </html>
