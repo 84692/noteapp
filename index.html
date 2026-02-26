@@ -256,6 +256,19 @@
   .log.err  { color:var(--red); }
   .log.info { color:var(--accent); }
 
+  #debugLog {
+    background:#111;
+    border:1px solid #333;
+    padding:10px;
+    font-size:0.8rem;
+    color:#ccc;
+    max-height:180px;
+    overflow-y:auto;
+    white-space:pre-wrap;
+    border-radius:var(--r);
+    margin-top:8px;
+  }
+
   footer {
     position:relative; z-index:5;
     text-align:center;
@@ -281,7 +294,7 @@
   <div class="card">
     <div class="label">🎬 Link direto do vídeo</div>
     <div class="row">
-      <input id="vurl" type="text" placeholder="https://…  (.mp4, .m3u8, stream direto de site de filmes…)" />
+      <input id="vurl" type="text" placeholder="https://…  (.mp4 direto ou link com CORS aberto)" />
       <button onclick="loadAndBroadcast()">▶ Carregar</button>
     </div>
   </div>
@@ -306,6 +319,7 @@
       BAIXAR VÍDEO PERMANENTE (.MP4)
     </button>
     <div class="toast" id="toast"></div>
+    <div id="debugLog"></div>
   </div>
 
   <div class="card">
@@ -326,6 +340,15 @@
 <footer>SyncWatch · WebRTC via PeerJS · conexão direta entre navegadores · sem servidor</footer>
 
 <script>
+// Debug log function
+function logDebug(msg, type = 'info') {
+  const logEl = document.getElementById('debugLog');
+  const prefix = type === 'err' ? '❌ ' : type === 'ok' ? '✅ ' : 'ℹ️ ';
+  const color = type === 'err' ? '#ff4757' : type === 'ok' ? '#3ddc84' : '#e8ff47';
+  logEl.innerHTML += `<div style="color:${color}">${prefix}${new Date().toLocaleTimeString()} - ${msg}</div>`;
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
 // ─── Room setup ──────────────────────────────────────────────
 function getRoom() {
   let h = location.hash.slice(1);
@@ -382,6 +405,7 @@ function setConnected(yes) {
 function initPeer(slot, fallbackSlot) {
   setLog('Conectando ao servidor de sinalização…');
   setPill('connecting','Conectando…');
+  logDebug('Iniciando Peer com slot: ' + slot);
 
   peer = new Peer(slot, {
     host: '0.peerjs.com',
@@ -402,6 +426,7 @@ function initPeer(slot, fallbackSlot) {
     theirSlot = (id === SLOT_A) ? SLOT_B : SLOT_A;
     setLog('Sala pronta · ID: ' + id.slice(-8) + ' · aguardando parceiro…', 'ok');
     setPill('connecting', 'Aguardando parceiro…');
+    logDebug('Peer aberto. Meu ID: ' + id + ' | Parceiro esperado: ' + theirSlot, 'ok');
     if (id === SLOT_B) attemptConnect(SLOT_A);
     else attemptConnect(SLOT_B);
   });
@@ -409,6 +434,7 @@ function initPeer(slot, fallbackSlot) {
   peer.on('connection', c => setupConn(c));
 
   peer.on('error', err => {
+    logDebug('PeerJS erro: ' + err.type + ' - ' + err.message, 'err');
     if (err.type === 'unavailable-id' && fallbackSlot) {
       peer.destroy();
       initPeer(fallbackSlot, null);
@@ -425,12 +451,14 @@ function initPeer(slot, fallbackSlot) {
 
   peer.on('disconnected', () => {
     setLog('Servidor de sinalização desconectou. Reconectando…', 'err');
+    logDebug('Peer desconectado do signaling, reconectando...', 'err');
     peer.reconnect();
   });
 }
 
 function attemptConnect(target) {
   if (conn && conn.open) return;
+  logDebug('Tentando conectar ao peer: ' + target);
   const c = peer.connect(target, { reliable:true, serialization:'json' });
   setupConn(c);
 }
@@ -441,10 +469,12 @@ function setupConn(c) {
     clearTimeout(retryTimer);
     setConnected(true);
     setLog('Conexão P2P direta estabelecida!', 'ok');
+    logDebug('Conexão P2P aberta com sucesso!', 'ok');
     const url = document.getElementById('vurl').value.trim();
     if (url) {
       setTimeout(() => {
         send({ type:'load', url, currentTime: vid.currentTime, paused: vid.paused });
+        logDebug('Enviado estado atual do vídeo pro peer');
       }, 400);
     }
   });
@@ -455,27 +485,34 @@ function setupConn(c) {
     conn = null;
     setConnected(false);
     setLog('Parceiro desconectou.', 'err');
+    logDebug('Parceiro desconectou. Tentando reconectar em 3s...', 'err');
     clearTimeout(retryTimer);
     retryTimer = setTimeout(() => attemptConnect(theirSlot), 3000);
   });
 
-  c.on('error', e => setLog('Erro de dados: ' + e, 'err'));
+  c.on('error', e => {
+    logDebug('Erro na conexão de dados: ' + e, 'err');
+    setLog('Erro de dados: ' + e, 'err');
+  });
 }
 
 // ─── Receive ─────────────────────────────────────────────────
 function onData(msg) {
   if (!msg || !msg.type) return;
   ignoring = true;
+  logDebug('Recebido msg do peer: ' + JSON.stringify(msg));
 
   if (msg.type === 'load') {
     if (msg.url && msg.url !== vid.src) {
+      logDebug('Peer carregou vídeo: ' + msg.url);
       loadVideo(msg.url);
       document.getElementById('vurl').value = msg.url;
       showToast('🎬 Parceiro carregou um vídeo');
+      setLog('Vídeo sincronizado do parceiro', 'ok');
     }
     setTimeout(() => {
       if (typeof msg.currentTime === 'number') vid.currentTime = msg.currentTime;
-      if (!msg.paused) vid.play().catch(()=>{});
+      if (!msg.paused) vid.play().catch(e => logDebug('Play falhou: ' + e.message, 'err'));
       ignoring = false;
     }, 900);
     return;
@@ -485,7 +522,7 @@ function onData(msg) {
     const drift  = (Date.now() - msg.ts) / 1000;
     const target = msg.currentTime + drift;
     if (Math.abs(vid.currentTime - target) > 1.5) vid.currentTime = target;
-    vid.play().catch(()=>{});
+    vid.play().catch(e => logDebug('Play remoto falhou: ' + e.message, 'err'));
     showToast('▶ Parceiro deu play');
   } else if (msg.type === 'pause') {
     vid.pause();
@@ -506,7 +543,12 @@ function fmtTime(s) {
 
 // ─── Send ────────────────────────────────────────────────────
 function send(msg) {
-  if (conn && conn.open) conn.send(msg);
+  if (conn && conn.open) {
+    conn.send(msg);
+    logDebug('Enviado: ' + JSON.stringify(msg));
+  } else {
+    logDebug('Tentou enviar mas conn não aberta', 'err');
+  }
 }
 
 // ─── Player events ───────────────────────────────────────────
@@ -527,30 +569,51 @@ vid.addEventListener('seeked', () => {
   send({ type:'seek', currentTime: vid.currentTime });
 });
 
+vid.addEventListener('error', (e) => {
+  const errMsg = e.message || 'Erro desconhecido no vídeo';
+  logDebug('ERRO NO VÍDEO: ' + errMsg + ' (provável CORS ou link inválido)', 'err');
+  showToast('Erro no vídeo - veja logs abaixo');
+});
+
 // ─── Load video ──────────────────────────────────────────────
 function loadVideo(url) {
+  logDebug('Tentando carregar vídeo: ' + url);
   if (hls) { hls.destroy(); hls = null; }
   document.getElementById('ph').style.display = 'none';
   vid.style.display = 'block';
 
   if (/\.m3u8/i.test(url) || /m3u8/i.test(url)) {
+    logDebug('Detectado HLS (.m3u8) - pode falhar se não tiver CORS');
     if (Hls.isSupported()) {
       hls = new Hls({ enableWorker: false });
       hls.loadSource(url);
       hls.attachMedia(vid);
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        logDebug('HLS erro: ' + data.details + ' - type: ' + data.type, 'err');
+      });
     } else if (vid.canPlayType('application/vnd.apple.mpegurl')) {
       vid.src = url;
     } else {
-      setLog('HLS não suportado neste navegador.', 'err');
+      logDebug('HLS não suportado neste navegador', 'err');
     }
   } else {
+    logDebug('Carregando como vídeo direto (.mp4 ou similar)');
     vid.src = url;
   }
+
+  // Tenta play auto pra testar logo
+  setTimeout(() => {
+    vid.play().catch(e => logDebug('Auto-play inicial falhou: ' + e.message + ' (normal se sem interação)', 'err'));
+  }, 1500);
 }
 
 function loadAndBroadcast() {
   const url = document.getElementById('vurl').value.trim();
-  if (!url) return;
+  if (!url) {
+    logDebug('Nenhum URL informado', 'err');
+    return;
+  }
+  logDebug('Você carregou: ' + url + ' - enviando pros peers');
   loadVideo(url);
   send({ type:'load', url, currentTime: 0, paused: true });
 }
@@ -599,13 +662,14 @@ async function baixarVideo() {
     }, 100);
 
   } catch (err) {
-    console.error(err);
-    alert("Download falhou.\n\nProváveis causas:\n• Link .m3u8 / HLS (não baixa direto)\n• Servidor bloqueia CORS\n• Proteção anti-download / token\n\nUse link .mp4 direto sem proteção.");
+    logDebug('Download falhou: ' + err.message + ' (CORS ou proteção no servidor)', 'err');
+    alert("Download falhou.\nProvável CORS bloqueado ou link protegido.\nUse .mp4 direto sem proteção.");
   }
 }
 
 // ─── Start ───────────────────────────────────────────────────
 initPeer(SLOT_A, SLOT_B);
+logDebug('SyncWatch iniciado. Cole um link MP4 direto (sem CORS bloqueado) pra funcionar pros dois.');
 </script>
 </body>
 </html>
