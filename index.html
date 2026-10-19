@@ -95,6 +95,7 @@ contact.rotation.x=-Math.PI/2;contact.position.y=.006;scene.add(contact);
 const actor=new THREE.Group();scene.add(actor);
 let vrm=null, skeleton=null;
 const bones={}; const physics={};
+const anatomy={arms:{}, legs:{}};
 const character = {
   ready:false, paused:false, elapsed:0, mode:'idle', x:0,z:0,
   yaw:0, yawVel:0, speed:0, previousSpeed:0, walkBlend:0, gait:0,
@@ -117,21 +118,60 @@ function joint(name,x=0,y=0,z=0,dt=.016,stiff=52) {
   }
   b.rotation.set(p.pos[0],p.pos[1],p.pos[2],'XYZ');
 }
+// Auto-calibração: identifica para que lado cada osso realmente se move neste VRM.
+function probeAxis(boneName, sampleName, axis, amount=.45) {
+  const bone=bones[boneName], sample=bones[sampleName];
+  if (!bone || !sample) return {positive:new THREE.Vector3(),negative:new THREE.Vector3()};
+  const saved=bone.rotation[axis];
+  const read=(angle)=>{
+    bone.rotation[axis]=angle;
+    bone.updateWorldMatrix(true,true);
+    return sample.getWorldPosition(new THREE.Vector3());
+  };
+  const positive=read(amount), negative=read(-amount);
+  bone.rotation[axis]=saved;bone.updateWorldMatrix(true,true);
+  return {positive,negative};
+}
 function setupBones() {
   const names=['hips','spine','chest','upperChest','neck','head',
     'leftShoulder','rightShoulder','leftUpperArm','rightUpperArm',
     'leftLowerArm','rightLowerArm','leftHand','rightHand',
     'leftUpperLeg','rightUpperLeg','leftLowerLeg','rightLowerLeg',
-    'leftFoot','rightFoot', 'leftToes','rightToes'];
+    'leftFoot','rightFoot','leftToes','rightToes'];
   for(const name of names) {
     const b=vrm.humanoid.getNormalizedBoneNode(name);
     if(b){bones[name]=b;physics[name]={pos:[0,0,0],v:[0,0,0]};}
   }
-  // A primeira pose começa com os braços relaxados, evitando o T inicial.
+  vrm.scene.updateMatrixWorld(true);
   for(const side of ['left','right']) {
-    const sign=side==='left'?-1:1;
-    const a=bones[side+'UpperArm']; if(a) {a.rotation.set(.03,0,sign*1.34);physics[side+'UpperArm'].pos=[.03,0,sign*1.34];}
-    const lower=bones[side+'LowerArm'];if(lower) {lower.rotation.x=-.13;physics[side+'LowerArm'].pos[0]=-.13;}
+    const upperArm=side+'UpperArm';
+    const wrist= bones[side+'Hand']?side+'Hand':side+'LowerArm';
+    const arm=probeAxis(upperArm,wrist,'z',.75);
+    // O ângulo escolhido é SEMPRE aquele que deixa a mão mais baixa.
+    const downSign=arm.positive.y<arm.negative.y?1:-1;
+    anatomy.arms[side]={downSign};
+
+    const upper=side+'UpperLeg',lower=side+'LowerLeg',ankle=side+'Foot';
+    const hipP=bones[upper]?.getWorldPosition(new THREE.Vector3());
+    const kneeP=bones[lower]?.getWorldPosition(new THREE.Vector3());
+    const footP=bones[ankle]?.getWorldPosition(new THREE.Vector3());
+    if(hipP&&kneeP&&footP) {
+      const forwardProbe=probeAxis(upper,lower,'x',.3);
+      const backProbe=probeAxis(lower,ankle,'x',.3);
+      // A frente do personagem corresponde a +Z local depois de rotacionar o VRM0.
+      const upperForwardSign=forwardProbe.positive.z>forwardProbe.negative.z?1:-1;
+      const kneeBackSign=backProbe.positive.z<backProbe.negative.z?1:-1;
+      anatomy.legs[side]={
+        upperLength:hipP.distanceTo(kneeP),lowerLength:kneeP.distanceTo(footP),
+        height:hipP.y-footP.y, offsetZ:footP.z-hipP.z,
+        upperForwardSign,kneeBackSign,
+      };
+    }
+    // Pose inicial relaxada: aplicar já na primeira imagem, sem passar por T-pose.
+    const upperBone=bones[upperArm];
+    if(upperBone){const z=downSign*1.27;upperBone.rotation.z=z;physics[upperArm].pos[2]=z;}
+    const lowerBone=bones[side+'LowerArm'];
+    if(lowerBone){lowerBone.rotation.x=-.10;physics[side+'LowerArm'].pos[0]=-.10;}
   }
   vrm.humanoid.update();
 }
@@ -200,32 +240,39 @@ function updateDecisions(dt) {
 }
 
 function moveRoot(dt) {
-  const s=character; const oldX=actor.position.x,oldZ=actor.position.z;
-  let targetSpeed=0,turn=0;
+  const s=character;let targetSpeed=0,turn=0,distToGoal=0;
   if(s.mode==='walk' && s.destination) {
     const dx=s.destination.x-actor.position.x,dz=s.destination.z-actor.position.z;
-    const distance=Math.hypot(dx,dz);
+    distToGoal=Math.hypot(dx,dz);
     const targetAngle=Math.atan2(dx,dz);
     turn=angleDiff(s.yaw,targetAngle);
-    if(distance<.14){stopWalking();}
-    else targetSpeed=s.preferredSpeed*Math.min(1,distance/.43)*Math.max(.25,1-Math.abs(turn)/3.4);
+    if(distToGoal<.14)stopWalking();
+    else {
+      // Gira primeiro para o destino. Nunca caminha de lado ou de costas.
+      const alignment=smoothstep(clamp((.62-Math.abs(turn))/.45,0,1));
+      targetSpeed=s.preferredSpeed*Math.min(1,distToGoal/.36)*alignment;
+    }
   }
-  // Giro com aceleração e amortecimento, para não trocar orientação instantaneamente.
-  const desiredVel=clamp(turn*3.4,-2.1,2.1);
-  s.yawVel=damp(s.yawVel,desiredVel,4.8,dt);
+  const desiredVel=clamp(turn*3.5,-2.25,2.25);
+  s.yawVel=damp(s.yawVel,desiredVel,5.4,dt);
   s.yaw=wrapPI(s.yaw+s.yawVel*dt);
   s.previousSpeed=s.speed;
-  s.speed=damp(s.speed,targetSpeed,3.1,dt);
-  if(s.speed<.001)s.speed=0;
-  actor.position.x+=Math.sin(s.yaw)*s.speed*dt;
-  actor.position.z+=Math.cos(s.yaw)*s.speed*dt;
+  const needsTurning=s.mode==='walk' && Math.abs(turn)>.61;
+  // Freio extra ao mudar de direção; o deslocamento só acontece para a frente.
+  s.speed=damp(s.speed,needsTurning?0:targetSpeed,needsTurning?15:4.2,dt);
+  if(s.speed<.002)s.speed=0;
+  const oldX=actor.position.x,oldZ=actor.position.z;
+  if(!needsTurning) {
+    actor.position.x+=Math.sin(s.yaw)*s.speed*dt;
+    actor.position.z+=Math.cos(s.yaw)*s.speed*dt;
+  }
   actor.position.x=clamp(actor.position.x,-1.65,1.65);
   actor.position.z=clamp(actor.position.z,-1,1);
   actor.rotation.y=s.yaw;
-  const dist=Math.hypot(actor.position.x-oldX,actor.position.z-oldZ);
-  const stride=.56+noise(s.elapsed*.18,13)*.035;
-  s.gait+=dist/stride*(2*Math.PI);
-  s.walkBlend=damp(s.walkBlend,clamp(s.speed/.5,0,1),5.8,dt);
+  const moved=Math.hypot(actor.position.x-oldX,actor.position.z-oldZ);
+  // Fase depende da distância realmente percorrida, não do relógio.
+  s.gait+=moved/.46*(2*Math.PI);
+  s.walkBlend=damp(s.walkBlend,clamp((needsTurning?0:s.speed)/.5,0,1),7.5,dt);
 }
 
 function gestureValue(side,kind) {
@@ -239,64 +286,112 @@ function gestureValue(side,kind) {
   return g.name==='balance'?envelope:0;
 }
 
-// Pose corporal inteiramente calculada a cada frame a partir de velocidade, fase e atenção.
+// Caminhada com duas etapas: apoio no chão e recuperação do pé no ar.
+// Cada perna tem fase independente. Isto é uma trajetória calculada em tempo real.
+function footPath(cycle, maxReach) {
+  const p=((cycle%1)+1)%1, support=.60;
+  if(p<support) {
+    return {forward:maxReach*(1-2*p/support),up:0};
+  }
+  const q=(p-support)/(1-support);
+  return {forward:mix(-maxReach,maxReach,smoothstep(q)),up:Math.pow(Math.sin(Math.PI*q),1.2)*.115};
+}
+// IK de dois ossos: encontra os ângulos para alcançar o tornozelo desejado.
+function solveLeg(leg,forward,up,rootY) {
+  const A=leg.upperLength,B=leg.lowerLength;
+  // O tornozelo fica na altura original, mesmo que o quadril oscile.
+  let z=leg.offsetZ+forward;
+  let y=-leg.height+up-rootY;
+  let distance=Math.hypot(z,y);
+  // Respeita o alcance anatômico e impede pernas viradas/invertidas.
+  const reach=Math.max(.1,A+B-.006);
+  if(distance>reach){const k=reach/distance;z*=k;y*=k;distance=reach;}
+  distance=Math.max(distance,Math.abs(A-B)+.006);
+  const along=(A*A-B*B+distance*distance)/(2*distance);
+  const perpendicular=Math.sqrt(Math.max(0,A*A-along*along));
+  const uz=z/distance,uy=y/distance;
+  // O joelho aponta à FRENTE do corpo, nunca para trás.
+  const kneeZ=along*uz+perpendicular*(-uy);
+  const kneeY=along*uy+perpendicular*uz;
+  const shinZ=z-kneeZ,shinY=y-kneeY;
+  const thighForward=Math.atan2(kneeZ,-kneeY);
+  const shinForward=Math.atan2(shinZ,-shinY);
+  const kneeFlex=clamp(thighForward-shinForward,0,1.35);
+  const upperX=leg.upperForwardSign*thighForward;
+  const lowerX=leg.kneeBackSign*kneeFlex;
+  // Compensação para manter sola paralela ao solo.
+  const footX=clamp(-(upperX+lowerX),-.60,.60);
+  return {upperX,lowerX,footX};
+}
+
+// Postura nasce da velocidade, da intenção e do equilíbrio — nunca de clipes gravados.
 function updateBody(dt) {
   const s=character,t=s.elapsed,w=s.walkBlend,phi=s.gait;
   const strideL=Math.sin(phi),strideR=Math.sin(phi+Math.PI);
-  const bob=w*(.014+.018*Math.cos(2*phi));
-  const breath=Math.sin(t*1.75+noise(t*.12,4)*.18)*.009;
-  actor.position.y=damp(actor.position.y,bob+breath*.5,9,dt);
+  const breath=Math.sin(t*1.75+noise(t*.12,4)*.18)*.008;
+  // Menos salto vertical evita que pés flutuem no apoio.
+  const bob=w*(.004+.006*Math.cos(2*phi));
+  actor.position.y=damp(actor.position.y,bob+breath*.2,8,dt);
   const acceleration=(s.speed-s.previousSpeed)/Math.max(.008,dt);
-  const sway=w*.035*Math.sin(phi) + (1-w)*.026*s.weight;
-  const lean=clamp(-acceleration*.085,-.085,.085);
-  joint('hips',lean*.30, s.yawVel*.022, -sway,dt);
-  joint('spine',breath+lean*.40, -s.yawVel*.11, sway*.6 + noise(t*.27,7)*.008,dt);
-  joint('chest',breath*.55, -s.yawVel*.09, sway*.44,dt);
-  joint('upperChest',breath*.55,0,-sway*.12,dt);
+  const sway=w*.022*Math.sin(phi)+(1-w)*.020*s.weight;
+  const lean=clamp(-acceleration*.055,-.055,.055);
+  joint('hips',lean*.23,s.yawVel*.016,-sway,dt);
+  joint('spine',breath+lean*.30,-s.yawVel*.07,sway*.48+noise(t*.27,7)*.007,dt);
+  joint('chest',breath*.52,-s.yawVel*.07,sway*.34,dt);
+  joint('upperChest',breath*.52,0,-sway*.12,dt);
 
-  // Marcha procedural: amplitudes variam com a velocidade, sem clips de caminhada.
-  for(const side of ['left','right']) {
-    const left=side==='left', v=left?strideL:strideR, sign=left?-1:1;
-    const lift=Math.pow(Math.max(0,v),1.55);
-    const angle= -v*(.40+.06*noise(t*.3,left?31:37))*w;
-    const knee=w*(.055+lift*.59+Math.max(0,-v)*.11);
-    const ankle=w*(v*.17-knee*.25);
-    const hipSpread=sign*(.026+w*.035*Math.cos(phi+(left?0:Math.PI)));
-    joint(side+'UpperLeg',angle,0,hipSpread,dt,85);
-    joint(side+'LowerLeg',knee,0,0,dt,92);
-    joint(side+'Foot',ankle,0,0,dt,75);
-    joint(side+'Toes',w*Math.max(0,-v)*-.13,0,0,dt,65);
-  }
-
-  // Braços são pêndulos amortecidos: gravidade puxa para baixo; marcha, giro e gestos perturbam.
   for(const side of ['left','right']) {
     const left=side==='left',sign=left?-1:1;
-    const oppositeLeg=left?strideR:strideL;
-    const idleX=noise(t*.50,left?51:62)*.05;
-    const swing=-oppositeLeg*.31*w + idleX*(1-w);
-    const inertia=-clamp(acceleration*.1,-.14,.14) - s.yawVel*.095*sign;
-    const wave=gestureValue(side,'wave'),reach=gestureValue(side,'reach');
-    const fidget=gestureValue(side,'fidget'),balance=gestureValue(side,'balance');
-    const armX=swing+inertia-.40*reach-.20*fidget+.11*balance;
-    const armZ=sign*(1.33 - .83*wave-.38*reach-.19*fidget + .08*balance)+noise(t*.35,left?70:80)*.028;
-    joint(side+'Shoulder',0,0,sign*.01+noise(t*.38,left?21:22)*.012,dt,25);
-    joint(side+'UpperArm',armX,sign*.045*(1-w),armZ,dt,33);
-    joint(side+'LowerArm',-.14-.57*wave-.46*reach-.25*fidget,0,sign*.06,dt,42);
-    joint(side+'Hand',noise(t*.6,left?91:92)*.05+.23*wave*Math.sin(t*13),0,sign*.045*wave,dt,28);
+    const leg=anatomy.legs[side];
+    if(leg) {
+      const cycle=phi/(2*Math.PI)+(left?0:.5);
+      const path=footPath(cycle,Math.min(.17,(leg.upperLength+leg.lowerLength)*.21));
+      const pose=solveLeg(leg,path.forward*w,path.up*w,actor.position.y);
+      const lateral=sign*(.008+w*.012*Math.sin(phi+(left?0:Math.PI)));
+      // Amortece os joelhos, mas deixa a dobra visível durante cada passo.
+      joint(side+'UpperLeg',pose.upperX*w,0,lateral,dt,95);
+      joint(side+'LowerLeg',pose.lowerX*w,0,0,dt,110);
+      // Usa ângulos atuais para cancelar parte do atraso e evitar pés empinados.
+      const thigh=physics[side+'UpperLeg']?.pos[0]??0;
+      const knee=physics[side+'LowerLeg']?.pos[0]??0;
+      const flatFoot=clamp(-thigh-knee,-.65,.65);
+      const toeUp=path.up>0?Math.min(.065,path.up*.45):0;
+      joint(side+'Foot',flatFoot+toeUp*w,0,0,dt,105);
+      joint(side+'Toes',0,0,0,dt,65);
+    }
   }
 
-  // Olhar independente do tronco, com pequenos desvios de foco e microinclinações.
+  // Braços: os sinais são medidos no esqueleto. Peso e inércia agem em torno da pose baixa.
+  for(const side of ['left','right']) {
+    const left=side==='left',sign=left?-1:1;
+    const down=anatomy.arms[side]?.downSign??(left?-1:1);
+    const oppositeLeg=left?strideR:strideL;
+    const swing=-oppositeLeg*.23*w+noise(t*.50,left?51:62)*.027*(1-w);
+    const inertia=-clamp(acceleration*.065,-.095,.095)-s.yawVel*.055*sign;
+    const wave=gestureValue(side,'wave'),reach=gestureValue(side,'reach');
+    const fidget=gestureValue(side,'fidget'),balance=gestureValue(side,'balance');
+    const armX=swing+inertia-.26*reach-.16*fidget+.08*balance;
+    const armZ=down*(1.28-.55*wave-.26*reach-.12*fidget+.06*balance)
+      +noise(t*.35,left?70:80)*.014;
+    joint(side+'Shoulder',0,0,sign*.006+noise(t*.38,left?21:22)*.008,dt,25);
+    joint(side+'UpperArm',armX,sign*.025*(1-w),armZ,dt,45);
+    joint(side+'LowerArm',-.10-.39*wave-.35*reach-.13*fidget,0,sign*.045,dt,45);
+    joint(side+'Hand',noise(t*.6,left?91:92)*.032+.16*wave*Math.sin(t*11),0,sign*.035*wave,dt,30);
+  }
+
+  // Atenção e observação ambiental continuam independentes do deslocamento.
   const headWorld=new THREE.Vector3();
-  if(bones.head) bones.head.getWorldPosition(headWorld);else headWorld.set(actor.position.x,1.45,actor.position.z);
-  const target=(s.gaze.kind==='viewer')?camera.position:s.gaze;
+  if(bones.head)bones.head.getWorldPosition(headWorld);
+  else headWorld.set(actor.position.x,1.45,actor.position.z);
+  const target=s.gaze.kind==='viewer'?camera.position:s.gaze;
   const dx=target.x-headWorld.x,dy=target.y-headWorld.y,dz=target.z-headWorld.z;
   const cos=Math.cos(-s.yaw),sin=Math.sin(-s.yaw);
   const localX=dx*cos+dz*sin,localZ=-dx*sin+dz*cos;
   const gazeYaw=clamp(Math.atan2(localX,localZ),-.76,.76);
-  const gazePitch=clamp(-Math.atan2(dy,Math.hypot(dx,dz)), -.35,.30);
-  const jitterX=noise(t*.65,101)*.018,jitterY=noise(t*.48,102)*.026;
-  joint('neck',gazePitch*.18, gazeYaw*.30,noise(t*.3,103)*.018,dt,22);
-  joint('head',gazePitch*.53+jitterX,gazeYaw*.55+jitterY,noise(t*.23,104)*.035,dt,27);
+  const gazePitch=clamp(-Math.atan2(dy,Math.hypot(dx,dz)),-.35,.30);
+  joint('neck',gazePitch*.18,gazeYaw*.30,noise(t*.3,103)*.018,dt,22);
+  joint('head',gazePitch*.53+noise(t*.65,101)*.018,
+    gazeYaw*.55+noise(t*.48,102)*.026,noise(t*.23,104)*.035,dt,27);
 }
 
 function updateFace() {
