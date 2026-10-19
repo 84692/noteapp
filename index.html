@@ -1,609 +1,386 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SyncWatch</title>
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#fafafa">
+<title>Companion 3D</title>
 <style>
-  :root {
-    --bg: #080810;
-    --surface: #0f0f18;
-    --card: #14141f;
-    --border: #252535;
-    --accent: #e8ff47;
-    --accent2: #7c5cfc;
-    --green: #3ddc84;
-    --red: #ff4757;
-    --text: #ececf0;
-    --muted: #5a5a72;
-    --r: 8px;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    min-height: 100vh;
-  }
-
-  body::after {
-    content:'';
-    position:fixed;
-    inset:0;
-    background-image:
-      linear-gradient(var(--border) 1px, transparent 1px),
-      linear-gradient(90deg, var(--border) 1px, transparent 1px);
-    background-size: 48px 48px;
-    opacity:0.18;
-    pointer-events:none;
-    z-index:0;
-  }
-
-  header {
-    position:relative;
-    z-index:10;
-    padding: 1.2rem 2rem;
-    display:flex;
-    align-items:center;
-    gap:1rem;
-    border-bottom:1px solid var(--border);
-    background: rgba(8,8,16,0.8);
-    backdrop-filter: blur(12px);
-  }
-
-  .logo {
-    font-family:'Bebas Neue', sans-serif;
-    font-size:1.9rem;
-    letter-spacing:3px;
-    color:var(--accent);
-  }
-  .logo span { color:var(--text); }
-
-  .status-pill {
-    margin-left:auto;
-    display:flex;
-    align-items:center;
-    gap:0.5rem;
-    background:var(--card);
-    border:1px solid var(--border);
-    padding:0.35rem 0.9rem;
-    border-radius:999px;
-    font-size:0.78rem;
-    color:var(--muted);
-    transition: all 0.4s;
-  }
-  .dot { width:7px; height:7px; border-radius:50%; background:var(--muted); transition: all 0.4s; flex-shrink:0; }
-  .status-pill.connecting .dot { background:#f5a623; box-shadow:0 0 6px #f5a623; }
-  .status-pill.connected  .dot { background:var(--green); box-shadow:0 0 8px var(--green); animation:blink 2.5s infinite; }
-  .status-pill.connected  { border-color:rgba(61,220,132,0.25); color:var(--text); }
-  .status-pill.error      .dot { background:var(--red); }
-
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
-
-  .wrap {
-    position:relative;
-    z-index:5;
-    max-width:900px;
-    margin:0 auto;
-    padding:1.8rem 1.5rem;
-    display:flex;
-    flex-direction:column;
-    gap:1.2rem;
-  }
-
-  .card {
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:var(--r);
-    padding:1.2rem 1.4rem;
-  }
-
-  .label {
-    font-size:0.68rem;
-    font-weight:500;
-    letter-spacing:.14em;
-    text-transform:uppercase;
-    color:var(--muted);
-    margin-bottom:.65rem;
-  }
-
-  .row { display:flex; gap:.7rem; align-items:stretch; }
-
-  input {
-    flex:1;
-    background:var(--surface);
-    border:1px solid var(--border);
-    color:var(--text);
-    padding:.7rem 1rem;
-    border-radius:var(--r);
-    font-family:inherit;
-    font-size:.88rem;
-    outline:none;
-    transition: border-color .2s, box-shadow .2s;
-  }
-  input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(232,255,71,.07); }
-  input::placeholder { color:var(--muted); font-style:italic; }
-
-  button {
-    background:var(--accent);
-    color:#080810;
-    border:none;
-    padding:.7rem 1.4rem;
-    border-radius:var(--r);
-    font-family:inherit;
-    font-weight:600;
-    font-size:.85rem;
-    cursor:pointer;
-    transition: all .18s;
-    white-space:nowrap;
-    display:inline-flex;
-    align-items:center;
-    gap:.4rem;
-  }
-  button:hover { background:#d4eb00; transform:translateY(-1px); }
-  button:active { transform:translateY(0); }
-  button.ghost {
-    background:var(--surface);
-    color:var(--text);
-    border:1px solid var(--border);
-    font-weight:400;
-  }
-  button.ghost:hover { border-color:var(--accent); color:var(--accent); background:var(--surface); }
-
-  .share-row {
-    margin-top:.8rem;
-    padding-top:.8rem;
-    border-top:1px solid var(--border);
-    display:flex;
-    gap:.7rem;
-    align-items:center;
-  }
-  .share-url {
-    flex:1;
-    font-family:'Courier New',monospace;
-    font-size:.75rem;
-    color:var(--muted);
-    background:var(--surface);
-    border:1px solid var(--border);
-    padding:.55rem .9rem;
-    border-radius:var(--r);
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-    cursor:default;
-    user-select:all;
-  }
-  .copied { font-size:.75rem; color:var(--green); opacity:0; transition:opacity .3s; pointer-events:none; }
-  .copied.show { opacity:1; }
-
-  .vwrap {
-    position:relative;
-    background:#000;
-    border-radius:var(--r);
-    overflow:hidden;
-    aspect-ratio:16/9;
-    border:1px solid var(--border);
-  }
-  video { width:100%; height:100%; display:block; background:#000; }
-
-  .placeholder {
-    position:absolute;
-    inset:0;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:1rem;
-    background:var(--surface);
-  }
-  .placeholder .icon { font-size:3.5rem; opacity:.12; }
-  .placeholder p { color:var(--muted); font-size:.88rem; }
-
-  .toast {
-    position:absolute;
-    top:.9rem;
-    right:.9rem;
-    background:rgba(8,8,16,.88);
-    border:1px solid var(--border);
-    backdrop-filter:blur(12px);
-    padding:.4rem .9rem;
-    border-radius:999px;
-    font-size:.72rem;
-    color:var(--accent);
-    opacity:0;
-    transform:translateY(-4px);
-    transition: all .3s;
-    pointer-events:none;
-  }
-  .toast.show { opacity:1; transform:translateY(0); }
-
-  .peers-bar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
-  .avatar-row { display:flex; }
-  .av {
-    width:30px; height:30px;
-    border-radius:50%;
-    border:2px solid var(--bg);
-    display:flex; align-items:center; justify-content:center;
-    font-size:.75rem; font-weight:600;
-    margin-left:-4px;
-  }
-  .av:first-child { margin-left:0; }
-  .av.me  { background:var(--accent);  color:#000; }
-  .av.p1  { background:var(--accent2); color:#fff; }
-
-  .peers-info { flex:1; }
-  .peers-info strong { display:block; font-size:.83rem; }
-  .peers-info small  { font-size:.73rem; color:var(--muted); }
-
-  .badge {
-    padding:.28rem .75rem;
-    border-radius:999px;
-    background:var(--surface);
-    border:1px solid var(--border);
-    font-size:.75rem; color:var(--muted);
-  }
-  .badge span { color:var(--accent); font-weight:600; }
-
-  .log {
-    font-size:.75rem; color:var(--muted); font-style:italic;
-    min-height:1.1rem; transition: color .3s;
-  }
-  .log.ok   { color:var(--green); }
-  .log.err  { color:var(--red); }
-  .log.info { color:var(--accent); }
-
-  #debugLog {
-    background:#111;
-    border:1px solid #333;
-    padding:10px;
-    font-size:0.8rem;
-    color:#ccc;
-    max-height:180px;
-    overflow-y:auto;
-    white-space:pre-wrap;
-    border-radius:var(--r);
-    margin-top:8px;
-  }
-
-  footer {
-    position:relative; z-index:5;
-    text-align:center;
-    padding:1.5rem;
-    color:var(--muted);
-    font-size:.72rem;
-    border-top:1px solid var(--border);
-  }
+  * { box-sizing: border-box; }
+  html,body { margin:0; width:100%; height:100%; overflow:hidden; background:#fafafa; font-family:system-ui,-apple-system,sans-serif; }
+  canvas { display:block; touch-action:none; }
+  #notice { position:fixed; bottom:calc(25px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
+    background:#fffedb; color:#555; border:1px solid #eee9c9; padding:10px 14px; border-radius:20px;
+    font-size:12px; max-width:calc(100vw - 100px); text-align:center; transition:opacity .6s; pointer-events:none; z-index:2; }
+  #notice.hidden { opacity:0; }
+  .tools { position:fixed; bottom:calc(20px + env(safe-area-inset-bottom)); right:16px; display:flex; gap:8px; z-index:3; }
+  .tool { width:40px; height:40px; border:1px solid #eaeaea; border-radius:50%; background:#ffffffd9;
+    color:#424242; display:grid; place-items:center; padding:0; backdrop-filter:blur(10px); }
+  .tool svg { width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
 </style>
+<script type="importmap">
+{"imports":{
+ "three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+ "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+ "@pixiv/three-vrm":"https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3/lib/three-vrm.module.min.js"
+}}
+</script>
 </head>
 <body>
-
-<header>
-  <div class="logo">Sync<span>Watch</span></div>
-  <div class="status-pill" id="pill">
-    <div class="dot"></div>
-    <span id="pillTxt">Iniciando…</span>
-  </div>
-</header>
-
-<div class="wrap">
-
-  <div class="card">
-    <div class="label">🎬 Link direto do vídeo</div>
-    <div class="row">
-      <input id="vurl" type="text" placeholder="https://… (.mp4 ou m3u8)" />
-      <button onclick="loadAndBroadcast()">▶ Carregar</button>
-    </div>
-    <label style="margin-top:8px;display:block;font-size:0.85rem;color:#aaa;">
-      <input type="checkbox" id="useProxy" checked> <strong>Usar proxy CORS (GAMBIARRA principal)</strong> — resolve tela cinza na maioria dos sites de filme
-    </label>
-  </div>
-
-  <div class="card">
-    <div class="label">🔗 Compartilhar sala</div>
-    <div id="log" class="log">Gerando sala P2P…</div>
-    <div class="share-row">
-      <div class="share-url" id="shareUrl">aguardando…</div>
-      <button class="ghost" onclick="copyLink()">Copiar link</button>
-      <span class="copied" id="copied">✓ Copiado!</span>
-    </div>
-  </div>
-
-  <div class="vwrap">
-    <div class="placeholder" id="ph">
-      <div class="icon">▶</div>
-      <p>Cole o link acima • marque o proxy • clique em Carregar</p>
-    </div>
-    <video id="vid" controls style="display:none"></video>
-    <button id="btnDownload" onclick="baixarVideo()" style="display:none; margin:12px auto; background:#e8ff47; color:#000; padding:12px 24px; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:1rem;">
-      BAIXAR VÍDEO PERMANENTE (.MP4)
-    </button>
-    <div class="toast" id="toast"></div>
-    <div id="debugLog"></div>
-  </div>
-
-  <div class="card">
-    <div class="peers-bar">
-      <div class="avatar-row" id="avatarRow">
-        <div class="av me" title="Você">V</div>
-      </div>
-      <div class="peers-info">
-        <strong id="peerTitle">Sala pronta</strong>
-        <small id="peerSub">Aguardando outra pessoa entrar…</small>
-      </div>
-      <div class="badge">Na sala: <span id="peerN">1</span></div>
-    </div>
-  </div>
-
+<div id="notice" role="status">Carregando personagem…</div>
+<div class="tools">
+  <button class="tool" id="pause" aria-label="Pausar movimentos" title="Pausar movimentos">
+    <svg viewBox="0 0 24 24"><path id="pauseIcon" d="M9 5v14 M15 5v14"/></svg>
+  </button>
+  <button class="tool" id="recenter" aria-label="Centralizar câmera" title="Centralizar câmera">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 2v4 M12 18v4 M2 12h4 M18 12h4"/></svg>
+  </button>
 </div>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 
-<footer>SyncWatch · WebRTC via PeerJS · GAMBIARRA CORS ativa</footer>
+const notice = document.getElementById('notice');
+const rand = (a=0,b=1) => a + (b-a)*Math.random();
+const clamp = THREE.MathUtils.clamp;
+const mix = THREE.MathUtils.lerp;
+const damp = (a,b,k,dt) => mix(a,b,1-Math.exp(-k*dt));
+const angleDiff = (a,b) => Math.atan2(Math.sin(b-a),Math.cos(b-a));
+const smoothstep = t => t*t*(3-2*t);
+const wrapPI = a => Math.atan2(Math.sin(a),Math.cos(a));
 
-<script>
-// Debug log
-function logDebug(msg, type = 'info') {
-  const logEl = document.getElementById('debugLog');
-  const prefix = type === 'err' ? '❌ ' : type === 'ok' ? '✅ ' : 'ℹ️ ';
-  const color = type === 'err' ? '#ff4757' : type === 'ok' ? '#3ddc84' : '#e8ff47';
-  logEl.innerHTML += `<div style="color:${color}">${prefix}${new Date().toLocaleTimeString()} — ${msg}</div>`;
-  logEl.scrollTop = logEl.scrollHeight;
+// Ruído suave sem repetição de clipes: microgestos ganham ritmos variados.
+function hash(i,seed) { let x=Math.sin(i*127.13+seed*411.37)*43758.5453; return 2*(x-Math.floor(x))-1; }
+function noise(t,seed=1) { const i=Math.floor(t), u=smoothstep(t-i); return mix(hash(i,seed),hash(i+1,seed),u); }
+function poisson(rate,dt) { return Math.random()<1-Math.exp(-rate*dt); }
+
+const scene = new THREE.Scene(); scene.background=new THREE.Color(0xfafafa);
+const renderer = new THREE.WebGLRenderer({antialias:true,powerPreference:'low-power'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.45));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.3;
+document.body.prepend(renderer.domElement);
+const camera = new THREE.PerspectiveCamera(34,innerWidth/innerHeight,.05,100);
+const controls = new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true; controls.dampingFactor=.075;
+controls.enablePan=false; controls.minDistance=1.35; controls.maxDistance=6.5;
+controls.minPolarAngle=.55; controls.maxPolarAngle=Math.PI/2-.055;
+
+scene.add(new THREE.HemisphereLight(0xffffff,0xcbd0d6,2.15));
+const sun=new THREE.DirectionalLight(0xffffff,3);
+sun.position.set(-2.7,5,3);sun.castShadow=true;sun.shadow.mapSize.set(768,768);
+sun.shadow.camera.left=-5;sun.shadow.camera.right=5;
+sun.shadow.camera.top=5;sun.shadow.camera.bottom=-5;
+sun.shadow.normalBias=.023;sun.shadow.bias=-.0001;sun.shadow.radius=3;scene.add(sun);
+const fill=new THREE.DirectionalLight(0xffffff,1);fill.position.set(2,2,-3);scene.add(fill);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.MeshStandardMaterial({color:0xffffff,roughness:.94}));
+floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+const wall=new THREE.Mesh(new THREE.PlaneGeometry(30,16),new THREE.MeshStandardMaterial({color:0xffffff,roughness:1}));
+wall.position.set(0,8,-6);scene.add(wall);
+
+// Sombra de contato segue os pés, mesmo em aparelhos com sombras fracas.
+const c=document.createElement('canvas'); c.width=c.height=128;
+const cx=c.getContext('2d'), gr=cx.createRadialGradient(64,64,3,64,64,64);
+gr.addColorStop(0,'rgba(0,0,0,.24)');gr.addColorStop(.4,'rgba(0,0,0,.10)');gr.addColorStop(1,'rgba(0,0,0,0)');
+cx.fillStyle=gr;cx.fillRect(0,0,128,128);
+const contact = new THREE.Mesh(new THREE.PlaneGeometry(1.0,.65),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}));
+contact.rotation.x=-Math.PI/2;contact.position.y=.006;scene.add(contact);
+
+const actor=new THREE.Group();scene.add(actor);
+let vrm=null, skeleton=null;
+const bones={}; const physics={};
+const character = {
+  ready:false, paused:false, elapsed:0, mode:'idle', x:0,z:0,
+  yaw:0, yawVel:0, speed:0, previousSpeed:0, walkBlend:0, gait:0,
+  preferredSpeed:.5, destination:null, pauseUntil:0, nextStart:0,
+  gaze:{kind:'viewer',x:0,y:1.2,z:3}, gazeNext:0,
+  blinkTime:0, blinkDuration:0, nextBlink:1.9, doubleBlink:0,
+  gesture:null, nextGesture:2.5, nextWeight:0, weightTarget:0, weight:0,
+  breathingPhase:0, expression:0, touchedUntil:0, lastCommand:'',
+};
+
+// Cada junta funciona como uma pequena mola amortecida (inércia + gravidade aproximada).
+function joint(name,x=0,y=0,z=0,dt=.016,stiff=52) {
+  const b=bones[name]; if(!b) return;
+  const p=physics[name];
+  const targets=[x,y,z];
+  const h=dt; const friction=2*Math.sqrt(stiff)*1.04;
+  for(let i=0;i<3;i++) {
+    p.v[i] += (stiff*(targets[i]-p.pos[i])-friction*p.v[i])*h;
+    p.pos[i] += p.v[i]*h;
+  }
+  b.rotation.set(p.pos[0],p.pos[1],p.pos[2],'XYZ');
+}
+function setupBones() {
+  const names=['hips','spine','chest','upperChest','neck','head',
+    'leftShoulder','rightShoulder','leftUpperArm','rightUpperArm',
+    'leftLowerArm','rightLowerArm','leftHand','rightHand',
+    'leftUpperLeg','rightUpperLeg','leftLowerLeg','rightLowerLeg',
+    'leftFoot','rightFoot', 'leftToes','rightToes'];
+  for(const name of names) {
+    const b=vrm.humanoid.getNormalizedBoneNode(name);
+    if(b){bones[name]=b;physics[name]={pos:[0,0,0],v:[0,0,0]};}
+  }
+  // A primeira pose começa com os braços relaxados, evitando o T inicial.
+  for(const side of ['left','right']) {
+    const sign=side==='left'?-1:1;
+    const a=bones[side+'UpperArm']; if(a) {a.rotation.set(.03,0,sign*1.34);physics[side+'UpperArm'].pos=[.03,0,sign*1.34];}
+    const lower=bones[side+'LowerArm'];if(lower) {lower.rotation.x=-.13;physics[side+'LowerArm'].pos[0]=-.13;}
+  }
+  vrm.humanoid.update();
 }
 
-// ─── Room setup ──────────────────────────────────────────────
-function getRoom() {
-  let h = location.hash.slice(1);
-  if (!h) { h = Math.random().toString(36).slice(2,9); location.hash = h; }
-  return h;
+function resetCamera() {
+  const portrait=innerHeight>innerWidth;
+  const target=new THREE.Vector3(actor.position.x,1.0,actor.position.z);
+  controls.target.copy(target);
+  camera.position.set(target.x,1.17, target.z+(portrait?4.2:3.3));
+  controls.update();
 }
-const ROOM   = getRoom();
-const SLOT_A = 'sw-' + ROOM + '-a';
-const SLOT_B = 'sw-' + ROOM + '-b';
-const SHARE  = location.href;
-document.getElementById('shareUrl').textContent = SHARE;
+document.getElementById('recenter').addEventListener('click',resetCamera);
+const pauseButton=document.getElementById('pause');
+pauseButton.addEventListener('click',()=>{
+  character.paused=!character.paused;
+  pauseButton.setAttribute('aria-label',character.paused?'Retomar movimentos':'Pausar movimentos');
+  document.getElementById('pauseIcon').setAttribute('d',character.paused?'M8 5 19 12 8 19 Z':'M9 5v14 M15 5v14');
+});
+resetCamera();
 
-// ─── State ───────────────────────────────────────────────────
-const vid = document.getElementById('vid');
-let peer, conn;
-let mySlot, theirSlot;
-let ignoring = false;
-let hls = null;
-let retryTimer = null;
-
-// ─── UI ──────────────────────────────────────────────────────
-function setPill(cls, txt) {
-  const p = document.getElementById('pill');
-  p.className = 'status-pill ' + cls;
-  document.getElementById('pillTxt').textContent = txt;
+// Motor de intenção: escolhe destinos/reação por probabilidades, nunca uma sequência gravada.
+function pickDestination() {
+  let next=null;
+  for(let n=0;n<10;n++) {
+    const ang=rand(-Math.PI,Math.PI), dist=rand(.55,1.65);
+    const x=clamp(actor.position.x+Math.sin(ang)*dist,-1.55,1.55);
+    const z=clamp(actor.position.z+Math.cos(ang)*dist,-.9,.9);
+    if(Math.hypot(x-actor.position.x,z-actor.position.z)>.36){next={x,z};break;}
+  }
+  if(!next)next={x:rand(-1.2,1.2),z:rand(-.7,.7)};
+  character.destination=next;character.mode='walk';character.preferredSpeed=rand(.34,.70);
 }
-let toastTimer;
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+function stopWalking(secs=rand(1.1,4.7)) {
+  character.mode='idle';character.destination=null;
+  character.nextStart=character.elapsed+secs;
 }
-function setLog(msg, cls='') {
-  const l = document.getElementById('log');
-  l.textContent = msg; l.className = 'log ' + cls;
+function decideGaze() {
+  const c=character;
+  if(Math.random()<.52) c.gaze={kind:'viewer'};
+  else {
+    const a=rand(-Math.PI,Math.PI),r=rand(1.5,3.7);
+    c.gaze={kind:'point',x:actor.position.x+Math.sin(a)*r,y:rand(.85,1.85),z:actor.position.z+Math.cos(a)*r};
+  }
+  c.gazeNext=c.elapsed+rand(.7,3.8);
 }
-function setConnected(yes) {
-  document.getElementById('peerN').textContent = yes ? 2 : 1;
-  document.getElementById('peerTitle').textContent  = yes ? '2 pessoas na sala — sincronizados!' : 'Sala pronta';
-  document.getElementById('peerSub').textContent    = yes ? 'Conexão WebRTC direta ativa ✓' : 'Aguardando outra pessoa entrar…';
-  const row = document.getElementById('avatarRow');
-  const ex  = row.querySelector('.p1');
-  if (yes && !ex) {
-    const av = document.createElement('div');
-    av.className='av p1'; av.title='Parceiro'; av.textContent='P';
-    row.appendChild(av);
-  } else if (!yes && ex) ex.remove();
-  if (yes) setPill('connected','Conectado ✓');
-  else     setPill('connecting','Aguardando…');
+function startGesture(name) {
+  const kinds=['reach','smallWave','fidget','balance'];
+  character.gesture={
+    name:name||kinds[Math.floor(Math.random()*kinds.length)],
+    side:Math.random()<.5?'left':'right',
+    start:character.elapsed, duration:rand(1.0,2.7), strength:rand(.45,.92)
+  };
+  character.nextGesture=character.elapsed+rand(2.5,9);
 }
-
-// ─── PeerJS ──────────────────────────────────────────────────
-function initPeer(slot, fallbackSlot) {
-  logDebug('Iniciando PeerJS...');
-  setLog('Conectando ao servidor de sinalização…');
-  setPill('connecting','Conectando…');
-
-  peer = new Peer(slot, {
-    host: '0.peerjs.com',
-    port: 443,
-    path: '/',
-    secure: true,
-    debug: 0,
-    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] }
-  });
-
-  peer.on('open', id => {
-    mySlot = id;
-    theirSlot = (id === SLOT_A) ? SLOT_B : SLOT_A;
-    setLog('Sala pronta', 'ok');
-    logDebug('Peer aberto. Meu ID: ' + id.slice(-8), 'ok');
-    setPill('connecting', 'Aguardando parceiro…');
-    if (id === SLOT_B) attemptConnect(SLOT_A);
-    else attemptConnect(SLOT_B);
-  });
-
-  peer.on('connection', c => setupConn(c));
-
-  peer.on('error', err => {
-    logDebug('PeerJS erro: ' + err.type, 'err');
-    if (err.type === 'unavailable-id' && fallbackSlot) { peer.destroy(); initPeer(fallbackSlot, null); return; }
-    if (err.type === 'peer-unavailable') {
-      clearTimeout(retryTimer);
-      retryTimer = setTimeout(() => attemptConnect(theirSlot), 4000);
-      return;
-    }
-    setPill('error', 'Erro');
-  });
-
-  peer.on('disconnected', () => {
-    logDebug('Desconectado do signaling, reconectando...', 'err');
-    peer.reconnect();
-  });
+function updateDecisions(dt) {
+  const s=character;s.elapsed+=dt;
+  if(s.mode==='idle' && s.elapsed>s.nextStart && poisson(.9,dt))pickDestination();
+  if(s.mode==='walk' && poisson(.055,dt)) stopWalking();
+  if(s.elapsed>s.gazeNext)decideGaze();
+  if(s.elapsed>s.nextWeight){s.weightTarget=rand(-1,1);s.nextWeight=s.elapsed+rand(1.8,5);}
+  if(s.elapsed>s.nextGesture && (s.mode==='idle'||poisson(.16,dt)) && !s.gesture)startGesture();
+  if(s.gesture && s.elapsed-s.gesture.start>s.gesture.duration)s.gesture=null;
+  if(s.elapsed>s.nextBlink){s.blinkTime=s.elapsed;s.blinkDuration=rand(.12,.24);s.nextBlink=s.elapsed+rand(2.0,5.3);if(Math.random()<.17)s.doubleBlink=1;}
+  if(s.doubleBlink && s.elapsed>s.blinkTime+s.blinkDuration+.15){s.doubleBlink=0;s.blinkTime=s.elapsed;s.blinkDuration=.13;}
+  s.weight=damp(s.weight,s.weightTarget,1.05,dt);
 }
 
-function attemptConnect(target) {
-  if (conn && conn.open) return;
-  logDebug('Tentando conectar ao peer ' + target);
-  const c = peer.connect(target, { reliable:true, serialization:'json' });
-  setupConn(c);
+function moveRoot(dt) {
+  const s=character; const oldX=actor.position.x,oldZ=actor.position.z;
+  let targetSpeed=0,turn=0;
+  if(s.mode==='walk' && s.destination) {
+    const dx=s.destination.x-actor.position.x,dz=s.destination.z-actor.position.z;
+    const distance=Math.hypot(dx,dz);
+    const targetAngle=Math.atan2(dx,dz);
+    turn=angleDiff(s.yaw,targetAngle);
+    if(distance<.14){stopWalking();}
+    else targetSpeed=s.preferredSpeed*Math.min(1,distance/.43)*Math.max(.25,1-Math.abs(turn)/3.4);
+  }
+  // Giro com aceleração e amortecimento, para não trocar orientação instantaneamente.
+  const desiredVel=clamp(turn*3.4,-2.1,2.1);
+  s.yawVel=damp(s.yawVel,desiredVel,4.8,dt);
+  s.yaw=wrapPI(s.yaw+s.yawVel*dt);
+  s.previousSpeed=s.speed;
+  s.speed=damp(s.speed,targetSpeed,3.1,dt);
+  if(s.speed<.001)s.speed=0;
+  actor.position.x+=Math.sin(s.yaw)*s.speed*dt;
+  actor.position.z+=Math.cos(s.yaw)*s.speed*dt;
+  actor.position.x=clamp(actor.position.x,-1.65,1.65);
+  actor.position.z=clamp(actor.position.z,-1,1);
+  actor.rotation.y=s.yaw;
+  const dist=Math.hypot(actor.position.x-oldX,actor.position.z-oldZ);
+  const stride=.56+noise(s.elapsed*.18,13)*.035;
+  s.gait+=dist/stride*(2*Math.PI);
+  s.walkBlend=damp(s.walkBlend,clamp(s.speed/.5,0,1),5.8,dt);
 }
 
-function setupConn(c) {
-  c.on('open', () => {
-    conn = c;
-    clearTimeout(retryTimer);
-    setConnected(true);
-    setLog('Conexão P2P direta estabelecida!', 'ok');
-    logDebug('P2P conectado!', 'ok');
-  });
-
-  c.on('data', onData);
-
-  c.on('close', () => {
-    conn = null;
-    setConnected(false);
-    setLog('Parceiro desconectou.', 'err');
-    logDebug('Parceiro saiu. Reconectando em 3s...', 'err');
-    clearTimeout(retryTimer);
-    retryTimer = setTimeout(() => attemptConnect(theirSlot), 3000);
-  });
+function gestureValue(side,kind) {
+  const g=character.gesture;
+  if(!g||g.side!==side)return 0;
+  const t=(character.elapsed-g.start)/g.duration;
+  const envelope=Math.pow(Math.max(0,Math.sin(Math.PI*clamp(t,0,1))),1.2)*g.strength;
+  if(kind==='wave')return g.name==='smallWave'?envelope:0;
+  if(kind==='reach')return g.name==='reach'?envelope:0;
+  if(kind==='fidget')return g.name==='fidget'?envelope:0;
+  return g.name==='balance'?envelope:0;
 }
 
-// ─── Receive ─────────────────────────────────────────────────
-function onData(msg) {
-  if (!msg || !msg.type) return;
-  ignoring = true;
-  logDebug('Recebido do peer: ' + msg.type);
+// Pose corporal inteiramente calculada a cada frame a partir de velocidade, fase e atenção.
+function updateBody(dt) {
+  const s=character,t=s.elapsed,w=s.walkBlend,phi=s.gait;
+  const strideL=Math.sin(phi),strideR=Math.sin(phi+Math.PI);
+  const bob=w*(.014+.018*Math.cos(2*phi));
+  const breath=Math.sin(t*1.75+noise(t*.12,4)*.18)*.009;
+  actor.position.y=damp(actor.position.y,bob+breath*.5,9,dt);
+  const acceleration=(s.speed-s.previousSpeed)/Math.max(.008,dt);
+  const sway=w*.035*Math.sin(phi) + (1-w)*.026*s.weight;
+  const lean=clamp(-acceleration*.085,-.085,.085);
+  joint('hips',lean*.30, s.yawVel*.022, -sway,dt);
+  joint('spine',breath+lean*.40, -s.yawVel*.11, sway*.6 + noise(t*.27,7)*.008,dt);
+  joint('chest',breath*.55, -s.yawVel*.09, sway*.44,dt);
+  joint('upperChest',breath*.55,0,-sway*.12,dt);
 
-  if (msg.type === 'load') {
-    logDebug('Parceiro carregou vídeo: ' + msg.url);
-    loadVideo(msg.url);
-    document.getElementById('vurl').value = msg.url;
-    showToast('🎬 Parceiro carregou vídeo');
+  // Marcha procedural: amplitudes variam com a velocidade, sem clips de caminhada.
+  for(const side of ['left','right']) {
+    const left=side==='left', v=left?strideL:strideR, sign=left?-1:1;
+    const lift=Math.pow(Math.max(0,v),1.55);
+    const angle= -v*(.40+.06*noise(t*.3,left?31:37))*w;
+    const knee=w*(.055+lift*.59+Math.max(0,-v)*.11);
+    const ankle=w*(v*.17-knee*.25);
+    const hipSpread=sign*(.026+w*.035*Math.cos(phi+(left?0:Math.PI)));
+    joint(side+'UpperLeg',angle,0,hipSpread,dt,85);
+    joint(side+'LowerLeg',knee,0,0,dt,92);
+    joint(side+'Foot',ankle,0,0,dt,75);
+    joint(side+'Toes',w*Math.max(0,-v)*-.13,0,0,dt,65);
   }
 
-  if (msg.type === 'play') {
-    const drift = (Date.now() - msg.ts) / 1000;
-    const target = msg.currentTime + drift;
-    if (Math.abs(vid.currentTime - target) > 1.5) vid.currentTime = target;
-    vid.play().catch(()=>{});
-  } else if (msg.type === 'pause') {
-    vid.pause();
-    if (Math.abs(vid.currentTime - msg.currentTime) > 1) vid.currentTime = msg.currentTime;
-  } else if (msg.type === 'seek') {
-    vid.currentTime = msg.currentTime;
+  // Braços são pêndulos amortecidos: gravidade puxa para baixo; marcha, giro e gestos perturbam.
+  for(const side of ['left','right']) {
+    const left=side==='left',sign=left?-1:1;
+    const oppositeLeg=left?strideR:strideL;
+    const idleX=noise(t*.50,left?51:62)*.05;
+    const swing=-oppositeLeg*.31*w + idleX*(1-w);
+    const inertia=-clamp(acceleration*.1,-.14,.14) - s.yawVel*.095*sign;
+    const wave=gestureValue(side,'wave'),reach=gestureValue(side,'reach');
+    const fidget=gestureValue(side,'fidget'),balance=gestureValue(side,'balance');
+    const armX=swing+inertia-.40*reach-.20*fidget+.11*balance;
+    const armZ=sign*(1.33 - .83*wave-.38*reach-.19*fidget + .08*balance)+noise(t*.35,left?70:80)*.028;
+    joint(side+'Shoulder',0,0,sign*.01+noise(t*.38,left?21:22)*.012,dt,25);
+    joint(side+'UpperArm',armX,sign*.045*(1-w),armZ,dt,33);
+    joint(side+'LowerArm',-.14-.57*wave-.46*reach-.25*fidget,0,sign*.06,dt,42);
+    joint(side+'Hand',noise(t*.6,left?91:92)*.05+.23*wave*Math.sin(t*13),0,sign*.045*wave,dt,28);
   }
 
-  setTimeout(() => { ignoring = false; }, 400);
+  // Olhar independente do tronco, com pequenos desvios de foco e microinclinações.
+  const headWorld=new THREE.Vector3();
+  if(bones.head) bones.head.getWorldPosition(headWorld);else headWorld.set(actor.position.x,1.45,actor.position.z);
+  const target=(s.gaze.kind==='viewer')?camera.position:s.gaze;
+  const dx=target.x-headWorld.x,dy=target.y-headWorld.y,dz=target.z-headWorld.z;
+  const cos=Math.cos(-s.yaw),sin=Math.sin(-s.yaw);
+  const localX=dx*cos+dz*sin,localZ=-dx*sin+dz*cos;
+  const gazeYaw=clamp(Math.atan2(localX,localZ),-.76,.76);
+  const gazePitch=clamp(-Math.atan2(dy,Math.hypot(dx,dz)), -.35,.30);
+  const jitterX=noise(t*.65,101)*.018,jitterY=noise(t*.48,102)*.026;
+  joint('neck',gazePitch*.18, gazeYaw*.30,noise(t*.3,103)*.018,dt,22);
+  joint('head',gazePitch*.53+jitterX,gazeYaw*.55+jitterY,noise(t*.23,104)*.035,dt,27);
 }
 
-// ─── Send ────────────────────────────────────────────────────
-function send(msg) {
-  if (conn && conn.open) conn.send(msg);
+function updateFace() {
+  if(!vrm?.expressionManager)return;
+  const e=vrm.expressionManager,s=character;
+  const elapsed=s.elapsed-s.blinkTime;
+  const blink=elapsed>=0 && elapsed<s.blinkDuration?
+    Math.pow(Math.sin(Math.PI*elapsed/s.blinkDuration),2):0;
+  try {if(e.getExpression('blink'))e.setValue('blink',blink);}catch(_){}
+  // Não impomos emoções ou expressões fortes; a identidade do modelo é preservada.
 }
 
-// ─── Player events ───────────────────────────────────────────
-vid.addEventListener('play', () => { if (!ignoring) send({ type:'play', currentTime: vid.currentTime, ts: Date.now() }); });
-vid.addEventListener('pause', () => { if (!ignoring) send({ type:'pause', currentTime: vid.currentTime }); });
-let lastSeek = 0;
-vid.addEventListener('seeked', () => {
-  if (ignoring) return;
-  const now = Date.now();
-  if (now - lastSeek < 500) return;
-  lastSeek = now;
-  send({ type:'seek', currentTime: vid.currentTime });
+// Interface de comandos para futuro LLM/voz/toque; também disponível no console do navegador.
+const api={
+  goTo(x,z) {
+    if(!Number.isFinite(x)||!Number.isFinite(z))return false;
+    character.destination={x:clamp(x,-1.55,1.55),z:clamp(z,-.9,.9)};
+    character.mode='walk';character.preferredSpeed=rand(.35,.65);character.paused=false;return true;
+  },
+  stop() {stopWalking(3.5);},
+  resume() {character.paused=false;},
+  pause() {character.paused=true;},
+  lookAt(x,y,z) {
+    if([x,y,z].every(Number.isFinite)){character.gaze={kind:'point',x,y,z};character.gazeNext=character.elapsed+5;return true;}
+    return false;
+  },
+  lookAtViewer(){character.gaze={kind:'viewer'};character.gazeNext=character.elapsed+5;},
+  gesture(name='smallWave'){startGesture(['smallWave','reach','fidget','balance'].includes(name)?name:'smallWave');},
+  state(){return {ready:character.ready,mode:character.mode,paused:character.paused,position:{x:actor.position.x,z:actor.position.z},speed:character.speed};}
+};
+window.companion=api;
+window.addEventListener('companion:command',e=>{
+  const c=e.detail||{};
+  if(c.type==='goTo')api.goTo(Number(c.x),Number(c.z));
+  if(c.type==='stop')api.stop();
+  if(c.type==='lookAt')api.lookAt(Number(c.x),Number(c.y),Number(c.z));
+  if(c.type==='lookAtViewer')api.lookAtViewer();
+  if(c.type==='gesture')api.gesture(c.name);
 });
 
-vid.addEventListener('error', e => {
-  logDebug('ERRO NO VÍDEO (tela cinza): ' + (e.target.error ? e.target.error.message : 'CORS ou link inválido'), 'err');
-});
-
-// ─── Load video com GAMBIARRA PROXY ──────────────────────────────────────────────
-function loadVideo(url) {
-  if (!url) return;
-  logDebug('Carregando vídeo: ' + url);
-
-  if (hls) { hls.destroy(); hls = null; }
-  document.getElementById('ph').style.display = 'none';
-  vid.style.display = 'block';
-
-  const useProxy = document.getElementById('useProxy').checked;
-  let finalUrl = url;
-
-  if (useProxy) {
-    finalUrl = `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
-    logDebug('✅ PROXY ATIVADO (gambiarra CORS) → ' + finalUrl.substring(0,80) + '...', 'ok');
-  } else {
-    logDebug('Proxy DESATIVADO (teste direto)', 'info');
-  }
-
-  if (/\.m3u8/i.test(url)) {
-    logDebug('Detectado HLS (.m3u8) — proxy ajuda mas segmentos podem falhar');
-    if (Hls.isSupported()) {
-      hls = new Hls({ enableWorker: false });
-      hls.loadSource(finalUrl);
-      hls.attachMedia(vid);
-    } else {
-      vid.src = finalUrl;
-    }
-  } else {
-    vid.src = finalUrl;
-  }
-
-  // tenta play
-  setTimeout(() => vid.play().catch(() => {}), 800);
-}
-
-function loadAndBroadcast() {
-  const url = document.getElementById('vurl').value.trim();
-  if (!url) return;
-  loadVideo(url);
-  send({ type:'load', url, currentTime: 0, paused: true });
-}
-
-document.getElementById('vurl').addEventListener('keydown', e => { if (e.key === 'Enter') loadAndBroadcast(); });
-
-// ─── Copy ───────────────────────────────────────────────
-function copyLink() {
-  navigator.clipboard.writeText(SHARE).then(() => {
-    const c = document.getElementById('copied');
-    c.classList.add('show');
-    setTimeout(() => c.classList.remove('show'), 2000);
-  });
-}
-
-// ─── Download ───────────────────────────────────
-vid.addEventListener('playing', () => {
-  document.getElementById('btnDownload').style.display = 'block';
-});
-
-async function baixarVideo() {
-  const src = vid.currentSrc || vid.src;
-  if (!src) { alert("Nenhum vídeo"); return; }
+// Mesma personagem do primeiro teste (VRM 0.0 compatível).
+const loader=new GLTFLoader();loader.register(parser=>new VRMLoaderPlugin(parser));
+const modelURL='https://raw.githubusercontent.com/pixiv/three-vrm/v0.6.11/packages/three-vrm/examples/models/three-vrm-girl.vrm';
+loader.load(modelURL,gltf=>{
   try {
-    const r = await fetch(src);
-    const blob = await r.blob();
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = "syncwatch_" + Date.now() + ".mp4";
-    a.click();
-  } catch(e) {
-    logDebug('Download falhou (CORS/proxy)', 'err');
-    alert("Download falhou — use link MP4 direto");
-  }
-}
+    vrm=gltf.userData.vrm;if(!vrm)throw new Error('Arquivo VRM inválido');
+    VRMUtils.removeUnnecessaryVertices(gltf.scene);
+    VRMUtils.removeUnnecessaryJoints(gltf.scene);
+    VRMUtils.rotateVRM0(vrm);
+    // Conserva o mesmo tamanho/posicionamento testado na versão anterior.
+    const bounds=new THREE.Box3().setFromObject(vrm.scene),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
+    if(size.y>0){const k=1.67/size.y;vrm.scene.scale.setScalar(k);vrm.scene.position.set(-center.x*k,-bounds.min.y*k,-center.z*k);}
+    vrm.scene.traverse(obj=>{if(obj.isMesh){obj.castShadow=true;obj.receiveShadow=false;obj.frustumCulled=false;}});
+    actor.add(vrm.scene);actor.updateMatrixWorld(true);
+    setupBones();vrm.update(0);
+    character.ready=true;character.nextStart=rand(.9,2.6);
+    character.nextBlink=rand(.4,1.5);character.gazeNext=rand(1.2,3.6);
+    character.nextGesture=rand(2,5);character.nextWeight=rand(1,3);
+    notice.textContent='';notice.classList.add('hidden');
+  }catch(err){console.error(err);notice.textContent='Erro ao preparar modelo';notice.classList.remove('hidden');}
+},progress=>{
+  if(progress.total)notice.textContent='Carregando '+Math.round(progress.loaded/progress.total*100)+'%';
+},error=>{console.error(error);notice.textContent='Erro de conexão ao carregar personagem';notice.classList.remove('hidden');});
 
-// ─── Start ───────────────────────────────────────────────────
-initPeer(SLOT_A, SLOT_B);
-logDebug('SyncWatch iniciado com GAMBIARRA PROXY CORS', 'ok');
-logDebug('Marque o checkbox e use links de filme → tela cinza deve sumir no outro PC', 'ok');
+const clock=new THREE.Clock();
+function frame(){
+  requestAnimationFrame(frame);
+  const dt=Math.min(clock.getDelta(),.033);
+  if(character.ready && !character.paused){
+    updateDecisions(dt);moveRoot(dt);updateBody(dt);updateFace();vrm.update(dt);
+  }
+  // Segue a pessoa sem alterar a distância, zoom, giro ou ângulo escolhidos pelo usuário.
+  const anchor=new THREE.Vector3(actor.position.x,1.0+actor.position.y,actor.position.z);
+  const desired=controls.target.clone().lerp(anchor,1-Math.exp(-2.4*dt));
+  camera.position.add(desired.clone().sub(controls.target));controls.target.copy(desired);
+  contact.position.x=actor.position.x;contact.position.z=actor.position.z;
+  contact.scale.set(1+character.speed*.3,1+character.speed*.25,1);
+  controls.update();renderer.render(scene,camera);
+}
+frame();
+addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.45));
+});
 </script>
 </body>
 </html>
